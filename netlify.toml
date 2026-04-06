@@ -1,0 +1,14 @@
+# https://docs.netlify.com/configure-builds/file-based-configuration/
+# Netlify sets deploy URLs — feeds canonical, Open Graph, JSON-LD, and sitemap.
+[build]
+  command = "VITE_SITE_URL=${DEPLOY_PRIME_URL:-$URL} npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# SPA fallback (safe if you add client routes or deep links later)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

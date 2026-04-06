@@ -1,0 +1,18 @@
+# Ephemeral frames extracted from user videos (see .cursor/rules/video-input-frames.mdc)
+.cursor/video-frames/
+
+# Generated at build when VITE_SITE_URL is set (scripts/write-seo-files.mjs)
+public/sitemap.xml
+
+# Dependencies & build output
+node_modules/
+dist/
+
+# Local env (secrets, machine-specific) — never commit
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+*.log

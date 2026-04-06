@@ -1,0 +1,61 @@
+@import './fonts.css';
+@import './tailwind.css';
+@import './theme.css';
+
+/*
+ * Mobile app shell (matches Tailwind `md` breakpoint at 768px):
+ * Lock the document so pull-to-stretch only affects the inner scrollport in App
+ * (`mobileScrollContainerRef`), not the whole page — same idea as Matas-style in-app scroll.
+ * CSS runs before React so the first frame does not scroll the viewport.
+ */
+@media (max-width: 767px) {
+  html {
+    height: 100%;
+    height: 100dvh;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  body {
+    height: 100%;
+    height: 100dvh;
+    margin: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  #root {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+
+/*
+ * Hide the system cursor on desktop — custom cursor in App.
+ * Use html + body + * so we beat Tailwind utilities (e.g. cursor-default on video).
+ */
+@media (min-width: 768px) {
+  html body,
+  html body *,
+  html body *::before,
+  html body *::after {
+    cursor: none !important;
+  }
+
+  html body input:not([type='range']):not([type='checkbox']):not([type='radio']),
+  html body textarea,
+  html body [contenteditable='true'] {
+    cursor: text !important;
+  }
+}
+
+/* Hide scrollbar while maintaining scroll functionality */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}

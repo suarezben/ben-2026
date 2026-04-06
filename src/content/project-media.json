@@ -1,0 +1,127 @@
+{
+  "_generatedAt": 1775443985218,
+  "meta": [
+    {
+      "mediaType": "image",
+      "url": "/projects/meta/Meta-Ray-Ban-Display_Social-Share-w.webp"
+    },
+    {
+      "mediaType": "video",
+      "url": "/projects/meta/neural-band-interaction-w.mp4"
+    }
+  ],
+  "fellow": [
+    {
+      "mediaType": "video",
+      "url": "/projects/fellow/0_01_aiden_intro-w.mp4"
+    },
+    {
+      "mediaType": "video",
+      "url": "/projects/fellow/0_01.2_guided_brew-w.mp4"
+    },
+    {
+      "mediaType": "image",
+      "url": "/projects/fellow/0_02_Screenshot%202024-03-14%20at%2011.06-1-w.png"
+    },
+    {
+      "mediaType": "image",
+      "url": "/projects/fellow/0_03_Screenshot%202024-03-14%20at%2011.06-w.png"
+    },
+    {
+      "mediaType": "video",
+      "url": "/projects/fellow/0_04_aiden-w.mp4"
+    },
+    {
+      "mediaType": "video",
+      "url": "/projects/fellow/1_01_espresso-w.mp4"
+    },
+    {
+      "mediaType": "image",
+      "url": "/projects/fellow/1_01_PresetProfiles-w.webp"
+    },
+    {
+      "mediaType": "image",
+      "url": "/projects/fellow/1_03_Experience-w.webp"
+    }
+  ],
+  "general-collaboration": [
+    {
+      "mediaType": "image",
+      "url": "/projects/general-collaboration/01-b.png"
+    },
+    {
+      "mediaType": "video",
+      "url": "/projects/general-collaboration/02-search-b.mp4"
+    },
+    {
+      "mediaType": "video",
+      "url": "/projects/general-collaboration/03-search-b.mp4"
+    }
+  ],
+  "ghost": [
+    {
+      "mediaType": "video",
+      "url": "/projects/ghost/0_ghost-hmi-b.mp4"
+    },
+    {
+      "mediaType": "video",
+      "url": "/projects/ghost/01_ghost%20alameda%20test%20track-w.mp4"
+    },
+    {
+      "mediaType": "video",
+      "url": "/projects/ghost/03_Time%20series%20interaction-w.mp4"
+    },
+    {
+      "mediaType": "image",
+      "url": "/projects/ghost/04-63d82015706f9e9f1a0190ba_Regulatory-16-9-p-1080-2-w.jpg"
+    },
+    {
+      "mediaType": "video",
+      "url": "/projects/ghost/05_Mar-21-2022%2015-44-29.mp4"
+    }
+  ],
+  "sutter-hill": [],
+  "lyft": [
+    {
+      "mediaType": "image",
+      "url": "/projects/lyft/00-lyft-b.png",
+      "mobileUrl": "/projects/lyft/00-lyft-mobile-b.png"
+    }
+  ],
+  "twitter": [
+    {
+      "mediaType": "video",
+      "url": "/projects/twitter/00-twitter.mp4"
+    },
+    {
+      "mediaType": "video",
+      "url": "/projects/twitter/01-twitter.mp4"
+    },
+    {
+      "mediaType": "video",
+      "url": "/projects/twitter/02-twitter.mp4"
+    }
+  ],
+  "periscope": [
+    {
+      "mediaType": "video",
+      "url": "/projects/periscope/00-periscope.mp4"
+    },
+    {
+      "mediaType": "video",
+      "url": "/projects/periscope/01-periscope.mp4"
+    },
+    {
+      "mediaType": "video",
+      "url": "/projects/periscope/02-periscope.mp4"
+    },
+    {
+      "mediaType": "image",
+      "url": "/projects/periscope/03-periscope-b.png"
+    },
+    {
+      "mediaType": "video",
+      "url": "/projects/periscope/04-periscope.mp4"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+/* Inter — self-hosted (WOFF2) via Fontsource; Latin + Latin-ext for names with diacritics. */
+@import '@fontsource/inter/latin-400.css';
+@import '@fontsource/inter/latin-500.css';
+@import '@fontsource/inter/latin-600.css';
+@import '@fontsource/inter/latin-ext-400.css';
+@import '@fontsource/inter/latin-ext-500.css';
+@import '@fontsource/inter/latin-ext-600.css';
+
+/*
+ * Alliance No. 1 — add licensed WOFF2 files to public/fonts/:
+ *   alliance-no-1-light.woff2    → weight 300 (use with font-light)
+ *   alliance-no-1-regular.woff2  → weight 400 (use with font-normal)
+ * Convert from your desktop OTF/TTF if needed; keep these filenames or edit the urls below.
+ */
+@font-face {
+  font-family: 'Alliance No.1';
+  src: url('/fonts/alliance-no-1-light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Alliance No.1';
+  src: url('/fonts/alliance-no-1-regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}

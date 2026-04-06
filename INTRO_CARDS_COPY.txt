@@ -1,0 +1,105 @@
+Intro card copy — edit here, then we sync into src/app/App.tsx.
+
+Code mapping (for when we paste back):
+  chip_name  →  name (chip label)
+  job_title  →  role   (your title at the company)
+  title      →  projectName  (big heading on the card)
+  role       →  subtitle     (gray line under the title)
+  year       →  year
+  description → description
+
+================================================================================
+META
+================================================================================
+id:          meta
+chip_name:   Meta Reality Labs
+job_title:   Product Designer
+
+title:       Meta Reality Labs
+role:        Product and spatial design
+year:        2025-Present
+description: Design and prototype novel interactions for next-generation wearables, including AI-driven experiences connected to hardware. Build and scale prototyping infrastructure in Origami Studio, enabling faster iteration and higher-fidelity exploration across devices. Much of this work remains confidential.
+
+================================================================================
+FELLOW
+================================================================================
+id:          fellow
+chip_name:   Fellow
+job_title:   Lead Product Designer
+
+title:       Fellow
+role:        Productivity platform
+year:        2023-2025
+description: Led UI and interaction design for Aiden, defining end-to-end flows, system behaviors, and the core interaction model. Explored control schemes, layouts, and physical inputs. Contributed early to Series 1 espresso and helped extend the design language across products.
+
+================================================================================
+GENERAL COLLABORATION
+================================================================================
+id:          general-collaboration
+chip_name:   General Collaboration
+job_title:   Founding Designer
+
+title:       General Collaboration
+role:        Founding Designer
+year:        2022-2025
+description: Designed a collaboration platform that synced comments and workflows across tools like Notion, Google Docs, and Figma. Defined core product direction, interaction model, and early system architecture.
+
+================================================================================
+GHOST
+================================================================================
+id:          ghost
+chip_name:   Ghost Autonomy
+job_title:   Designer
+
+title:       Ghost Autonomy
+role:        Designer
+year:        2021-2022
+description: Designed end-to-end interaction systems for a self-driving platform, spanning HMI, physical controls, LEDs, and haptics. Also built internal tools for test track operations and vehicle testing workflows.
+
+================================================================================
+SUTTER HILL
+================================================================================
+id:          sutter-hill
+chip_name:   Sutter Hill Ventures
+job_title:   Designer in Residence
+
+title:       Sutter Hill Ventures
+role:        Designer in Residence
+year:        2020-2021
+description: Designer-in-residence supporting early-stage portfolio companies. Prototyped new product concepts, validated ideas, and helped shape products prior to funding and incubation.
+
+================================================================================
+LYFT
+================================================================================
+id:          lyft
+chip_name:   Lyft
+job_title:   Designer
+
+title:       Lyft
+role:        Designer
+year:        2018-2020
+description: Designed core driver experiences, including a full redesign of the driver app's structure, navigation, and workflows. Explored new operating models in response to regulatory changes, rethinking the platform for shift-based work. Also contributed to new product areas, including non-emergency medical transportation.
+
+================================================================================
+TWITTER
+================================================================================
+id:          twitter
+chip_name:   Twitter
+job_title:   Designer
+
+title:       Twitter
+role:        Designer
+year:        2016-2018
+description: Worked on media experiences with a focus on video, improving how content is viewed, shared, and discovered across the platform.
+
+================================================================================
+PERISCOPE
+================================================================================
+id:          periscope
+chip_name:   Periscope
+job_title:   Designer
+
+title:       Periscope
+role:        Designer
+year:        2016-2018
+description: Designed core live streaming experiences across creation and viewing. Led a full redesign of the web experience to support broader access and engagement.

@@ -1,0 +1,10 @@
+{
+  "logos": [
+    { "src": "/projects/sutter-hill/logos/augment.png", "alt": "Augment Code" },
+    { "src": "/projects/sutter-hill/logos/ghost.png", "alt": "Ghost" },
+    { "src": "/projects/sutter-hill/logos/everest.png", "alt": "Everest" },
+    { "src": "/projects/sutter-hill/logos/observe.png", "alt": "Observe" },
+    { "src": "/projects/sutter-hill/logos/luminary.png", "alt": "Luminary" },
+    { "src": "/projects/sutter-hill/logos/transposit.png", "alt": "Transposit" }
+  ]
+}

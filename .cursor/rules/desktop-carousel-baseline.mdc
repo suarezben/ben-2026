@@ -1,0 +1,14 @@
+---
+description: Do not casually change desktop carousel physics or custom cursor filters; baseline is documented.
+globs: src/app/App.tsx,src/app/components/custom-cursor.tsx
+alwaysApply: false
+---
+
+# Desktop carousel + cursor
+
+Before editing **desktop horizontal carousel** drag, inertia, rubber band, or **custom cursor** backdrop/spring values in `App.tsx` or `custom-cursor.tsx`, read **`docs/dev-localhost-and-carousel-baseline.md`**.
+
+- Do **not** change `runtimeCarouselPhysics`, `CAROUSEL_RUBBER_SPRING`, `CAROUSEL_INERTIA_START_FACTOR`, `desktopRubberResistance`, or the Framer opacity spring on the desktop rail unless the user explicitly asks to tune them.
+- Cursor: size may change if requested; keep **`invert(30%)`**, **`blur(10px)`**, press **scale 0.85**, and spring **800 / 30 / 0.3** unless the user asks otherwise.
+
+If the user reports “wrong” behavior on first `npm run dev` open, see the **localhost caching** section in that doc (stale Chrome cache, `strictPort`).

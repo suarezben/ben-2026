@@ -1,0 +1,37 @@
+---
+description: When the user shares a video, extract frames with ffmpeg and analyze those images—never pretend to have watched the file directly.
+alwaysApply: true
+---
+
+# Video attachments and screen recordings
+
+If the user provides a **video path** (`.mov`, `.mp4`, `.webm`, `.m4v`, etc.) or asks you to look at a recording **do not** claim you watched the video or infer motion from the binary file.
+
+## Required workflow
+
+1. **Resolve the path**  
+   If the file is outside the workspace, ask the user to **copy or move** it into the repo (e.g. `docs/debug/clip.mov`) or paste an **absolute path** you can read from the shell.
+
+2. **Probe duration** (when `ffprobe` is available)  
+   `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 <file>`
+
+3. **Extract frames** into a workspace folder (gitignored), e.g. `.cursor/video-frames/<short-id>/`  
+   Use **`ffmpeg`** with a **smart spread** so short and long clips are covered without flooding context:
+   - **Always:** first frame (`t=0`), last frame (`t=duration-0.1` or `-sseof`), and **~1 frame per second** for the **first 5s**, plus **~1 every 3s** for the rest, **capped at ~12–15 PNGs total** for a typical bug report. For very short clips (<3s), take **5–8 evenly spaced** frames.
+   - Example pattern (adapt timestamps after probing):  
+     `ffmpeg -y -i "<input>" -vf "select='...'" -vsync vfr ".cursor/video-frames/<id>/frame-%03d.png"`  
+     Or simpler: multiple `-ss <t> -i "<input>" -vframes 1` calls for chosen timestamps.
+
+4. **Analyze**  
+   `Read` the exported **PNG/JPEG** files and describe what you see (layout, UI state, before/after). Tie findings to code only after you have frame evidence.
+
+5. **Cleanup**  
+   Delete the extracted folder when done if it was only for one-off debugging, or leave it and remind the user to remove it.
+
+## If `ffmpeg` / `ffprobe` are missing
+
+Say so clearly. Ask the user to install them (e.g. `brew install ffmpeg`) or to export **2–5 screenshots** manually and add those images to the project.
+
+## Paths outside the workspace
+
+macOS Messages / iCloud paths often **aren’t visible** in the sandbox. Prefer files **inside the repo** or a path the user confirms is readable.
