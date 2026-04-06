@@ -1299,7 +1299,10 @@ export default function App() {
           {/* Header — tighter top inset + type for laptop (~md–xl); large desktop unchanged feel at 2xl. */}
           <div ref={desktopHeaderBlockRef} className="mb-[16px] lg:mb-[20px]">
             <div className="font-['Alliance_No.1',sans-serif] font-light leading-[normal] not-italic text-[20px] lg:text-[25px] xl:text-[30px] text-black tracking-[-1px] lg:tracking-[-1.21px] xl:tracking-[-1.46px] mb-[16px] lg:mb-[20px]">
-              <IntroNameHeading variant="desktop" />
+              <IntroNameHeading
+                variant="desktop"
+                onSignatureClick={() => setActiveProject('meta')}
+              />
             </div>
 
             {/* Desktop chips: one row until the content edge, then natural wrap (mobile stays horizontal scroll). */}
@@ -1359,7 +1362,10 @@ export default function App() {
             variants={MOBILE_SHELL_STAGGER_CHILD}
             className="font-['Alliance_No.1',sans-serif] font-light leading-[1.08] not-italic text-[22px] text-black tracking-[-0.99px] mb-[24px]"
           >
-            <IntroNameHeading variant="mobile" />
+            <IntroNameHeading
+              variant="mobile"
+              onSignatureClick={() => setActiveProject('meta')}
+            />
           </motion.div>
 
           {/* Chip rail: sticky to this scrollport (below safe-area inset on the shell). */}
