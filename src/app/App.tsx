@@ -1349,7 +1349,7 @@ export default function App() {
             touchAction: 'pan-y',
           }}
         >
-          <div className="touch-pan-y min-w-0 w-full max-w-full px-[24px] pb-[60px] pt-[32px]">
+          <div className="touch-pan-y min-w-0 w-full max-w-full px-[24px] pb-[60px] pt-[36px]">
           <motion.div
             className="contents"
             variants={MOBILE_SHELL_STAGGER_PARENT}
@@ -1360,7 +1360,7 @@ export default function App() {
           <motion.div
             ref={mobileIntroRef}
             variants={MOBILE_SHELL_STAGGER_CHILD}
-            className="font-['Alliance_No.1',sans-serif] font-light leading-[1.08] not-italic text-[22px] text-black tracking-[-0.99px] mb-[24px]"
+            className="font-['Alliance_No.1',sans-serif] font-light leading-[1.08] not-italic text-[22px] text-black tracking-[-0.99px] mb-[28px]"
           >
             <IntroNameHeading
               variant="mobile"
@@ -1436,7 +1436,7 @@ export default function App() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: isMobile ? 0.16 : 0.25, ease: 'easeInOut' }}
-                className="mb-[6px] mt-[6px] flex flex-col gap-[24px]"
+                className="mb-[8px] mt-[10px] flex flex-col gap-[24px]"
               >
                 <IntroCard
                   {...currentProject.introCard}

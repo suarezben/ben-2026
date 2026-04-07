@@ -101,7 +101,7 @@ export function IntroCard({
         md:h-[499px] md:justify-between 2xl:h-[568px]
         px-[18px] pt-[18px] ${hasLogo ? 'pb-0 md:pb-[18px]' : 'pb-[18px]'}`}
       >
-        <div className="content-stretch flex flex-col gap-[12px] items-start not-italic relative shrink-0 w-full">
+        <div className="content-stretch flex flex-col gap-[16px] md:gap-[12px] items-start not-italic relative shrink-0 w-full">
           {/* Figma: Inter 600, 12px, line-height 22px, letter-spacing 0%, black @ 40% opacity, vertical align bottom */}
           <div className="content-stretch flex font-['Inter',sans-serif] font-semibold items-end justify-between relative shrink-0 text-[12px] text-black w-full gap-3">
             <div className="flex flex-col justify-end opacity-40 relative shrink-0 min-w-0">

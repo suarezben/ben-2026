@@ -7,7 +7,7 @@
 @import '@fontsource/inter/latin-ext-600.css';
 
 /*
- * Alliance No. 1 — add licensed WOFF2 files to public/fonts/:
+ * Alliance No. 1 — add licensed WOFF2 files to public/fonts/ (see public/fonts/README.txt):
  *   alliance-no-1-light.woff2    → weight 300 (use with font-light)
  *   alliance-no-1-regular.woff2  → weight 400 (use with font-normal)
  * Convert from your desktop OTF/TTF if needed; keep these filenames or edit the urls below.

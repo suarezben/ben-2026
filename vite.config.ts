@@ -1,8 +1,12 @@
+import fs from 'node:fs'
+import path from 'path'
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import type { Plugin } from 'vite'
-import path from 'path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const port = 5173
 
@@ -100,9 +104,37 @@ function preloadInterAboveFold(): Plugin {
   }
 }
 
+/** When licensed WOFF2 files exist in public/fonts/, preload them (matches src/styles/fonts.css). */
+function preloadAllianceFontsIfPresent(): Plugin {
+  const allianceFiles = [
+    'alliance-no-1-light.woff2',
+    'alliance-no-1-regular.woff2',
+  ] as const
+  return {
+    name: 'preload-alliance-fonts-if-present',
+    transformIndexHtml: {
+      order: 'pre',
+      handler(html) {
+        const fontsDir = path.join(__dirname, 'public', 'fonts')
+        const lines: string[] = []
+        for (const file of allianceFiles) {
+          if (fs.existsSync(path.join(fontsDir, file))) {
+            lines.push(
+              `    <link rel="preload" href="/fonts/${file}" as="font" type="font/woff2" crossorigin />`,
+            )
+          }
+        }
+        if (lines.length === 0) return html
+        return html.replace('<head>', `<head>\n${lines.join('\n')}`)
+      },
+    },
+  }
+}
+
 export default defineConfig({
   plugins: [
     injectSeoAbsoluteTags(),
+    preloadAllianceFontsIfPresent(),
     preloadInterAboveFold(),
     // The React and Tailwind plugins are both required for Make, even if
     // Tailwind is not being actively used – do not remove them
