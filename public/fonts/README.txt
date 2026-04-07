@@ -1,9 +1,15 @@
-Alliance No. 1 (licensed) — add two WOFF2 files here so headings use the real face instead of sans-serif fallback:
+Alliance No. 1 (licensed) — place files in this folder. @font-face is in src/styles/fonts.css.
 
-  alliance-no-1-light.woff2    → weight 300 (font-light in the app)
-  alliance-no-1-regular.woff2  → weight 400 (font-normal)
+Current setup supports either:
 
-Names must match exactly. @font-face lives in src/styles/fonts.css.
-Convert from your OTF/TTF with a tool you trust (e.g. fonttools, online converter for personal use only per your license).
+  OTF (export names from the desktop kit):
+    Alliance-No-1-Light.otf     → weight 300 (font-light)
+    Alliance-No-1-Regular.otf   → weight 400 (font-normal)
 
-After adding files: commit them (if your license allows hosting on the public site) and push — Netlify will serve /fonts/*.woff2 like any static asset.
+  Optional smaller web files (if you convert later):
+    alliance-no-1-light.woff2
+    alliance-no-1-regular.woff2
+
+If both WOFF2 and OTF exist for a weight, browsers use WOFF2 first.
+
+Commit and push only if your license allows self-hosting on a public site. Netlify serves /fonts/* as static files.

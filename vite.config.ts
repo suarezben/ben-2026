@@ -104,12 +104,18 @@ function preloadInterAboveFold(): Plugin {
   }
 }
 
-/** When licensed WOFF2 files exist in public/fonts/, preload them (matches src/styles/fonts.css). */
+/** Preload Alliance when WOFF2 or OTF exists (prefers WOFF2 per weight; matches src/styles/fonts.css). */
 function preloadAllianceFontsIfPresent(): Plugin {
-  const allianceFiles = [
-    'alliance-no-1-light.woff2',
-    'alliance-no-1-regular.woff2',
-  ] as const
+  const candidates: { rel: string; type: string }[][] = [
+    [
+      { rel: 'alliance-no-1-light.woff2', type: 'font/woff2' },
+      { rel: 'Alliance-No-1-Light.otf', type: 'font/otf' },
+    ],
+    [
+      { rel: 'alliance-no-1-regular.woff2', type: 'font/woff2' },
+      { rel: 'Alliance-No-1-Regular.otf', type: 'font/otf' },
+    ],
+  ]
   return {
     name: 'preload-alliance-fonts-if-present',
     transformIndexHtml: {
@@ -117,10 +123,11 @@ function preloadAllianceFontsIfPresent(): Plugin {
       handler(html) {
         const fontsDir = path.join(__dirname, 'public', 'fonts')
         const lines: string[] = []
-        for (const file of allianceFiles) {
-          if (fs.existsSync(path.join(fontsDir, file))) {
+        for (const chain of candidates) {
+          const hit = chain.find((c) => fs.existsSync(path.join(fontsDir, c.rel)))
+          if (hit) {
             lines.push(
-              `    <link rel="preload" href="/fonts/${file}" as="font" type="font/woff2" crossorigin />`,
+              `    <link rel="preload" href="/fonts/${hit.rel}" as="font" type="${hit.type}" crossorigin />`,
             )
           }
         }
