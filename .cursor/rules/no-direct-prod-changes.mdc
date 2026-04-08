@@ -1,0 +1,22 @@
+---
+description: Never commit or push directly to production; always use a branch
+alwaysApply: true
+---
+
+# No direct changes to production
+
+**Production branch for this repo:** `main` (deployed via Netlify). Treat `main` as prod unless the user names a different release branch.
+
+## Required workflow
+
+1. **Before committing** — If the current branch is `main` (or the agreed prod branch), **create and switch to a new branch first** (e.g. `feature/…`, `fix/…`, `wip/…`). Do not leave work committed only on `main` unless the user explicitly asks to commit to production.
+2. **Do not** push straight to `main` to “save” work; use a branch and a PR (or the user’s merge process).
+3. **Do not** force-push to `main` or rewrite prod history unless the user explicitly requests it and understands the impact.
+
+## If the user is on `main` with local edits
+
+- Prefer: `git checkout -b <descriptive-branch>` so uncommitted changes stay on that branch, then commit there.
+
+## Exceptions
+
+- Only when the user **explicitly** asks to commit or merge to `main`/production — then follow their instructions.
