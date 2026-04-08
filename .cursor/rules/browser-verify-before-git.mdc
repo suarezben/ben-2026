@@ -1,0 +1,23 @@
+---
+description: User must verify changes in the browser before commit or push
+alwaysApply: true
+---
+
+# Browser check before git
+
+The user **reviews the agent’s work in a real browser** before anything is committed or pushed.
+
+## Before `git commit`, `git push`, or opening a PR
+
+1. **Do not** run commit/push (or tell the user it’s “ready to ship”) until they have **confirmed** they checked the app in the browser, **unless** they **explicitly** waive verification (e.g. “no runtime impact — config/markdown only” or “skip browser — I’ll verify later”).
+2. When they ask you to commit or push, **stop and remind** them: start the dev server (`npm run dev` here — usually `http://localhost:5173` unless the terminal shows another URL), exercise the screens that changed, then say when they’re satisfied.
+3. Offer a **short checklist** of what to click or scroll so verification is quick and purposeful.
+
+## After making UI or behavior changes
+
+- End with a reminder to refresh the browser and spot-check before committing, even if they did not ask for git yet.
+
+## Exceptions
+
+- **Obvious no-preview changes** (e.g. comments-only, pure typo in `.md` with no build effect): still mention “no browser needed unless you want to sanity-check.”
+- If they already wrote that they **verified in browser**, proceed with git when they ask.
