@@ -102,8 +102,8 @@ export function IntroCard({
         px-[18px] pt-[18px] ${hasLogo ? 'pb-0 md:pb-[18px]' : 'pb-[18px]'}`}
       >
         <div className="content-stretch flex flex-col gap-[16px] md:gap-[12px] items-start not-italic relative shrink-0 w-full">
-          {/* Figma: Inter 600, 12px, line-height 22px, letter-spacing 0%, black @ 40% opacity, vertical align bottom */}
-          <div className="content-stretch flex font-['Inter',sans-serif] font-semibold items-end justify-between relative shrink-0 text-[12px] text-black w-full gap-3">
+          {/* Eyebrow: Alliance semibold (600), 12px / 22px line — matches former Inter 600 spec */}
+          <div className="content-stretch flex font-['Alliance_No.1',sans-serif] font-semibold items-end justify-between relative shrink-0 text-[12px] text-black w-full gap-3">
             <div className="flex flex-col justify-end opacity-40 relative shrink-0 min-w-0">
               <p className="leading-[22px] tracking-normal">{eyebrowLeft}</p>
             </div>
@@ -125,7 +125,7 @@ export function IntroCard({
                 <p className="leading-[normal] whitespace-pre-wrap">{projectName}</p>
               )}
             </div>
-            <p className="font-['Inter',sans-serif] font-normal leading-[normal] relative shrink-0 text-[14px] text-[rgb(0_0_0/0.4)] w-full whitespace-pre-wrap">
+            <p className="font-['Alliance_No.1',sans-serif] font-normal leading-[normal] relative shrink-0 text-[14px] text-[rgb(0_0_0/0.4)] w-full whitespace-pre-wrap">
               {description}
             </p>
           </div>

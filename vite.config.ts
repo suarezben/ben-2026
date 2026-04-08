@@ -115,6 +115,10 @@ function preloadAllianceFontsIfPresent(): Plugin {
       { rel: 'alliance-no-1-regular.woff2', type: 'font/woff2' },
       { rel: 'Alliance-No-1-Regular.otf', type: 'font/otf' },
     ],
+    [
+      { rel: 'alliance-no-1-semibold.woff2', type: 'font/woff2' },
+      { rel: 'Alliance-No-1-SemiBold.otf', type: 'font/otf' },
+    ],
   ]
   return {
     name: 'preload-alliance-fonts-if-present',
