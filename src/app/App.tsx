@@ -332,8 +332,8 @@ const CHIP_RAIL_SPRING = {
  * The shell uses `min-h-screen` with `max-h-screen` so its box stays viewport-tall; otherwise height can
  * track the zoomed carousel and `shellRect.bottom` collapses (bad `available`). Fit uses
  * `available = shell.bottom − row.top − pad` and `natural = rowHeight / currentZoom` (ref-based, not
- * `getComputedStyle(zoom)`, which varies by engine). Desktop Safari uses `min(rectHeight, layoutBox)`
- * before dividing by zoom to avoid over-shrink.
+ * `getComputedStyle(zoom)`, which varies by engine). **Desktop Safari:** skip CSS `zoom` shrink
+ * entirely (always scale 1) — WebKit mis-measures zoomed descendants and over-shrinks vs Chrome.
  * Chips / site header stay 1:1; horizontal drag scroll is unchanged. Conservative floor avoids tiny UI.
  */
 const DESKTOP_CAROUSEL_CONTENT_SCALE_MIN = 0.7;
@@ -341,9 +341,8 @@ const DESKTOP_CAROUSEL_CONTENT_SCALE_MIN = 0.7;
 const DESKTOP_CAROUSEL_CONTENT_BOTTOM_PAD_PX = 24;
 
 /**
- * Desktop Safari (WebKit): `getBoundingClientRect()` on descendants of a `zoom` wrapper can overshoot
- * the true layout height, inflating `natural` and over-shrinking the carousel (extra horizontal “air”).
- * Chrome/Chromium are stable with rect ÷ zoom; Safari blends rect with layout box metrics.
+ * Desktop Safari (macOS): skip vertical `zoom` fit — measurement around nested `zoom` is unreliable
+ * and produces persistent under-scale vs Chrome. Short viewports still scroll inside the desktop shell.
  */
 function isDesktopSafariWebKit(): boolean {
   if (typeof navigator === 'undefined') return false;
@@ -697,6 +696,15 @@ export default function App() {
       if (zoomWrap) void zoomWrap.offsetHeight;
 
       const zCur = desktopCarouselContentScaleRef.current;
+
+      if (isDesktopSafariWebKit()) {
+        if (Math.abs(zCur - 1) > 0.004) {
+          desktopCarouselContentScaleRef.current = 1;
+          setDesktopCarouselContentScale(1);
+        }
+        return;
+      }
+
       const shellRect = shell.getBoundingClientRect();
       const rowRect = rowEl.getBoundingClientRect();
       const rowH = rowRect.height;
@@ -704,11 +712,7 @@ export default function App() {
 
       // Row is inside the zoom wrapper: rendered height ≈ layout × zoom. Undo with ref (Chrome-safe;
       // getComputedStyle(zoom) is inconsistent across engines).
-      const layoutBoxH = Math.max(rowEl.offsetHeight, rowEl.scrollHeight);
-      const rectNatural = rowH / zCur;
-      const natural = isDesktopSafariWebKit()
-        ? Math.min(rowH, layoutBoxH) / zCur
-        : rectNatural;
+      const natural = rowH / zCur;
 
       const available =
         shellRect.bottom - rowRect.top - DESKTOP_CAROUSEL_CONTENT_BOTTOM_PAD_PX;
@@ -720,15 +724,6 @@ export default function App() {
           DESKTOP_CAROUSEL_CONTENT_SCALE_MIN,
           Math.min(1, available / natural)
         );
-      }
-      // Safari: rect vs `natural` can disagree when zoom nesting settles late — if the row already fits
-      // vertically in the shell slot, avoid sub-unity zoom (prevents “Chrome tight / Safari airy” drift).
-      if (
-        isDesktopSafariWebKit() &&
-        next < 1 &&
-        rowH <= available + 2
-      ) {
-        next = 1;
       }
       if (Math.abs(next - zCur) > 0.004) {
         desktopCarouselContentScaleRef.current = next;
