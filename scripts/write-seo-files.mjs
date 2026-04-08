@@ -1,6 +1,6 @@
 /**
  * Writes `public/robots.txt` and, when `VITE_SITE_URL` is set, `public/sitemap.xml`.
- * Run from `prebuild` so Netlify can pass `VITE_SITE_URL=$DEPLOY_PRIME_URL`.
+ * Run from `prebuild` after Netlify sets `VITE_SITE_URL` (see netlify.toml).
  */
 import fs from 'fs';
 import path from 'path';

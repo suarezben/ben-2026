@@ -16,7 +16,7 @@ const SEO_DESCRIPTION =
 
 /**
  * Canonical, og:url, social image URLs, and Person JSON-LD — only when `VITE_SITE_URL` is set
- * (Netlify: `VITE_SITE_URL=$DEPLOY_PRIME_URL npm run build`).
+ * (Netlify: production uses `VITE_SITE_URL=$URL`; previews use `DEPLOY_PRIME_URL`.)
  */
 function injectSeoAbsoluteTags(): Plugin {
   return {

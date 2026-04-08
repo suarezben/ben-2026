@@ -29,7 +29,7 @@ interface IntroCardProps {
 function ThinYearArrow({ className = '' }: { className?: string }) {
   return (
     <svg
-      className={`shrink-0 origin-center scale-[1.1] translate-y-[0.5px] pb-[2px] ${className}`.trim()}
+      className={`mx-[2px] shrink-0 origin-center scale-[1.1] translate-y-[0.5px] pb-0 ${className}`.trim()}
       width={9}
       height={8}
       viewBox="0 0 8.76989 8.26705"
