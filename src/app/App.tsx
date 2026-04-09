@@ -110,21 +110,6 @@ const projects: Project[] = [
     cards: [],
   },
   {
-    id: 'general-collaboration',
-    name: 'General Collaboration',
-    company: 'General Collaboration',
-    role: 'Founding Designer',
-    year: '2022-2025',
-    introCard: {
-      projectName: 'Cross-app Collaboration',
-      year: '2022-2025',
-      description:
-        'Founding designer on a cross-tool collaboration platform syncing comments and workflows across tools. Explored and prototyped multiple product directions, defining the interaction model and early architecture.',
-      logo: null,
-    },
-    cards: [],
-  },
-  {
     id: 'ghost',
     name: 'Ghost Autonomy',
     company: 'Ghost Autonomy',
@@ -135,6 +120,21 @@ const projects: Project[] = [
       year: '2021-2022',
       description:
         'Designed the driver experience for a self-driving car, centered around an implicit "just let go" handoff where the car takes control. Prototyped interactions across display, audio, haptics, and LED indicators in-car, and built tools to support test track workflows.',
+      logo: null,
+    },
+    cards: [],
+  },
+  {
+    id: 'general-collaboration',
+    name: 'General Collaboration',
+    company: 'General Collaboration',
+    role: 'Founding Designer',
+    year: '2022-2025',
+    introCard: {
+      projectName: 'Cross-app Collaboration',
+      year: '2022-2025',
+      description:
+        'Founding designer on a cross-tool collaboration platform syncing comments and workflows across tools. Explored and prototyped multiple product directions, defining the interaction model and early architecture.',
       logo: null,
     },
     cards: [],
