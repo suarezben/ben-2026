@@ -110,21 +110,6 @@ const projects: Project[] = [
     cards: [],
   },
   {
-    id: 'general-collaboration',
-    name: 'General Collaboration',
-    company: 'General Collaboration',
-    role: 'Founding Designer',
-    year: '2022-2025',
-    introCard: {
-      projectName: 'Cross-app Collaboration',
-      year: '2022-2025',
-      description:
-        'Founding designer on a cross-tool collaboration platform syncing comments and workflows across tools. Explored and prototyped multiple product directions, defining the interaction model and early architecture.',
-      logo: null,
-    },
-    cards: [],
-  },
-  {
     id: 'ghost',
     name: 'Ghost Autonomy',
     company: 'Ghost Autonomy',
@@ -135,6 +120,21 @@ const projects: Project[] = [
       year: '2021-2022',
       description:
         'Designed the driver experience for a self-driving car, centered around an implicit "just let go" handoff where the car takes control. Prototyped interactions across display, audio, haptics, and LED indicators in-car, and built tools to support test track workflows.',
+      logo: null,
+    },
+    cards: [],
+  },
+  {
+    id: 'general-collaboration',
+    name: 'General Collaboration',
+    company: 'General Collaboration',
+    role: 'Founding Designer',
+    year: '2022-2025',
+    introCard: {
+      projectName: 'Cross-app Collaboration',
+      year: '2022-2025',
+      description:
+        'Founding designer on a cross-tool collaboration platform syncing comments and workflows across tools. Explored and prototyped multiple product directions, defining the interaction model and early architecture.',
       logo: null,
     },
     cards: [],
@@ -757,16 +757,12 @@ export default function App() {
     const header = desktopHeaderBlockRef.current;
     if (header) ro.observe(header);
     window.addEventListener('resize', rafMeasure);
-    shell.addEventListener('scroll', rafMeasure, { passive: true });
-    if (scrollPort) scrollPort.addEventListener('scroll', rafMeasure, { passive: true });
     burstRemeasure();
     return () => {
       desktopCarouselRemeasureRef.current = null;
       desktopCarouselBurstRemeasureRef.current = null;
       ro.disconnect();
       window.removeEventListener('resize', rafMeasure);
-      shell.removeEventListener('scroll', rafMeasure);
-      scrollPort?.removeEventListener('scroll', rafMeasure);
     };
   }, [isMobile, activeProject, currentProject.cards.length]);
 
@@ -1307,17 +1303,17 @@ export default function App() {
   };
 
   return (
-    <div className="bg-white h-full min-h-0 md:min-h-screen md:h-auto">
+    <div className="bg-white h-full min-h-0 md:h-full md:min-h-0 md:max-h-full md:overflow-hidden">
       {/* Custom Cursor - Desktop only */}
       <div className="hidden md:block">
         <CustomCursor isPressed={isPressed} />
       </div>
 
       {/* Desktop Layout */}
-      <div className="hidden md:block">
+      <div className="hidden md:block md:h-full md:min-h-0">
         <div
           ref={desktopShellRef}
-          className="px-[17.5px] lg:px-[24.5px] xl:px-[31.5px] pt-[14px] lg:pt-[20px] xl:pt-[33px] 2xl:pt-[46px] pb-[60px] lg:pb-[80px] min-h-screen max-h-screen overflow-y-auto"
+          className="px-[17.5px] lg:px-[24.5px] xl:px-[31.5px] pt-[14px] lg:pt-[20px] xl:pt-[33px] 2xl:pt-[46px] pb-[60px] lg:pb-[80px] h-full min-h-0 max-h-full overflow-y-hidden"
         >
           {/* Header — tighter top inset + type for laptop (~md–xl); large desktop unchanged feel at 2xl. */}
           <div ref={desktopHeaderBlockRef} className="mb-[16px] lg:mb-[20px]">
