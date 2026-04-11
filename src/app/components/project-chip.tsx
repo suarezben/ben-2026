@@ -68,7 +68,7 @@ export const ProjectChip = forwardRef<HTMLButtonElement, ProjectChipProps>(
         cornerSmoothing: 1,
         preserveSmoothing: true,
       });
-      const svg = `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg"><path d="${path}" fill="black"/></svg>`;
+      const svg = `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg"><path d="${path}" fill="#121111"/></svg>`;
       const encoded = encodeURIComponent(svg);
       return {
         WebkitMaskImage: `url("data:image/svg+xml,${encoded}")`,
@@ -117,8 +117,8 @@ export const ProjectChip = forwardRef<HTMLButtonElement, ProjectChipProps>(
             : 'overflow-hidden rounded-[88px] md:rounded-[60px] lg:rounded-[64px] xl:rounded-[68px]'
         } ${
           isActive
-            ? 'bg-[#121111] text-white md:bg-black'
-            : 'bg-[#f2f2f2] text-black md:bg-[rgb(0_0_0/0.05)] md:hover:bg-[rgb(0_0_0/0.08)]'
+            ? 'bg-[#121111] text-white md:bg-[#121111]'
+            : 'bg-[#f2f2f2] text-[#121111] md:bg-[rgb(18_17_17/0.05)] md:hover:bg-[rgb(18_17_17/0.08)]'
         }`}
       >
         <p className="antialiased font-['Inter',sans-serif] font-medium md:font-normal leading-[normal] not-italic text-[14px] md:text-[13.6px] lg:text-[14.8px] xl:text-[16.6px] text-center tracking-[-0.7px] md:tracking-[-0.61px] lg:tracking-[-0.67px] xl:tracking-[-0.75px]">

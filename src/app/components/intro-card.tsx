@@ -103,7 +103,7 @@ export function IntroCard({
       >
         <div className="content-stretch flex flex-col gap-[16px] md:gap-[12px] items-start not-italic relative shrink-0 w-full">
           {/* Eyebrow: Alliance semibold (600), 12px / 22px line — matches former Inter 600 spec */}
-          <div className="content-stretch flex font-['Alliance_No.1',sans-serif] font-semibold items-end justify-between relative shrink-0 text-[12px] text-black w-full gap-3">
+          <div className="content-stretch flex font-['Alliance_No.1',sans-serif] font-semibold items-end justify-between relative shrink-0 text-[12px] text-[#121111] w-full gap-3">
             <div className="flex flex-col justify-end opacity-40 relative shrink-0 min-w-0">
               <p className="leading-[22px] tracking-normal">{eyebrowLeft}</p>
             </div>
@@ -115,7 +115,7 @@ export function IntroCard({
           </div>
 
           <div className="content-stretch flex flex-col gap-[6px] items-start relative shrink-0 w-full">
-            <div className="font-['Alliance_No.1',sans-serif] font-normal leading-[0] relative shrink-0 text-[24px] text-black tracking-[-1.2px] md:tracking-[-1.08px] w-full">
+            <div className="font-['Alliance_No.1',sans-serif] font-normal leading-[0] relative shrink-0 text-[24px] text-[#121111] tracking-[-1.2px] md:tracking-[-1.08px] w-full">
               {titleLines ? (
                 <>
                   <p className="leading-[normal] mb-0">{titleLines[0]}</p>

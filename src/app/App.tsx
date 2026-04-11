@@ -129,10 +129,10 @@ const projects: Project[] = [
     name: 'General Collaboration',
     company: 'General Collaboration',
     role: 'Founding Designer',
-    year: '2022-2025',
+    year: '2022-2024',
     introCard: {
       projectName: 'Cross-app Collaboration',
-      year: '2022-2025',
+      year: '2022-2024',
       description:
         'Founding designer on a cross-tool collaboration platform syncing comments and workflows across tools. Explored and prototyped multiple product directions, defining the interaction model and early architecture.',
       logo: null,
@@ -1317,7 +1317,7 @@ export default function App() {
         >
           {/* Header — tighter top inset + type for laptop (~md–xl); large desktop unchanged feel at 2xl. */}
           <div ref={desktopHeaderBlockRef} className="mb-[16px] lg:mb-[20px]">
-            <div className="font-['Alliance_No.1',sans-serif] font-light leading-[normal] not-italic text-[20px] lg:text-[25px] xl:text-[30px] text-black tracking-[-1px] lg:tracking-[-1.21px] xl:tracking-[-1.46px] mb-[16px] lg:mb-[20px]">
+            <div className="font-['Alliance_No.1',sans-serif] font-light leading-[normal] not-italic text-[20px] lg:text-[25px] xl:text-[30px] text-[#121111] tracking-[-1px] lg:tracking-[-1.21px] xl:tracking-[-1.46px] mb-[16px] lg:mb-[20px]">
               <IntroNameHeading
                 variant="desktop"
                 onSignatureClick={() => setActiveProject('meta')}
@@ -1379,7 +1379,7 @@ export default function App() {
           <motion.div
             ref={mobileIntroRef}
             variants={MOBILE_SHELL_STAGGER_CHILD}
-            className="font-['Alliance_No.1',sans-serif] font-light leading-[1.08] not-italic text-[22px] text-black tracking-[-0.99px] mb-[28px]"
+            className="font-['Alliance_No.1',sans-serif] font-light leading-[1.08] not-italic text-[22px] text-[#121111] tracking-[-0.99px] mb-[28px]"
           >
             <IntroNameHeading
               variant="mobile"
@@ -1438,7 +1438,7 @@ export default function App() {
               aria-hidden
               className="pointer-events-none -mx-[24px] h-px w-auto shrink-0"
               style={{
-                backgroundColor: mobilePinnedRuleVisible ? 'rgb(0 0 0 / 0.03)' : '#ffffff',
+                backgroundColor: mobilePinnedRuleVisible ? 'rgb(18 17 17 / 0.03)' : '#ffffff',
               }}
             />
           </motion.div>

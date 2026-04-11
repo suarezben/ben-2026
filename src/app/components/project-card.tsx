@@ -9,7 +9,7 @@ import {
 } from '../lib/desktop-rail-layout';
 
 function squircleMaskStyles(width: number, height: number, pathD: string) {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><path fill="#000" d="${pathD}"/></svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><path fill="#121111" d="${pathD}"/></svg>`;
   const url = `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}")`;
   return {
     WebkitMaskImage: url,
@@ -293,7 +293,7 @@ export function ProjectCard({
       >
         <defs>
           <clipPath id={`squircle-stroke-m-${id}`}>
-            <path d={squirclePathMobile} fill="black" />
+            <path d={squirclePathMobile} fill="#121111" />
           </clipPath>
         </defs>
         <path
@@ -315,7 +315,7 @@ export function ProjectCard({
       >
         <defs>
           <clipPath id={`squircle-stroke-d-${id}`}>
-            <path d={squirclePathDesktop} fill="black" />
+            <path d={squirclePathDesktop} fill="#121111" />
           </clipPath>
         </defs>
         <path
