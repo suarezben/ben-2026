@@ -1,10 +1,10 @@
 {
-  "meta": "/projects/meta/logo.svg",
-  "fellow": "/projects/fellow/logo.png",
-  "general-collaboration": "/projects/general-collaboration/logo.svg",
-  "ghost": "/projects/ghost/logo.svg",
-  "sutter-hill": "/projects/sutter-hill/logo.png",
-  "lyft": "/projects/lyft/logo.svg",
-  "twitter": "/projects/twitter/logo.svg",
-  "periscope": "/projects/periscope/logo.svg"
+  "meta": "/projects/meta/logo.svg?v=fb40c58a50",
+  "fellow": "/projects/fellow/logo.png?v=081539a48b",
+  "general-collaboration": "/projects/general-collaboration/logo.svg?v=4c738cd282",
+  "ghost": "/projects/ghost/logo.svg?v=9d40fd1c5d",
+  "sutter-hill": "/projects/sutter-hill/logo.png?v=986ba78981",
+  "lyft": "/projects/lyft/logo.svg?v=a28d48c28a",
+  "twitter": "/projects/twitter/logo.svg?v=17b603378c",
+  "periscope": "/projects/periscope/logo.svg?v=5090b98edf"
 }

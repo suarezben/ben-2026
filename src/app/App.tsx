@@ -15,13 +15,20 @@ import { TwitterLogo } from './components/logos/twitter-logo';
 import { PeriscopeLogo } from './components/logos/periscope-logo';
 import projectMedia from '@/content/project-media.json';
 import projectLogos from '@/content/project-logos.json';
-import {
-  preloadProjectMedia,
-  type ProjectMediaJson,
-  type ProjectLogosJson,
-} from './preload-media';
+import { queueMediaPrefetch, prioritizeMediaPrefetch } from './lib/prefetch-media';
 import { LYFT_DESKTOP_RAIL_WIDTH_SCALE } from './lib/desktop-rail-layout';
-import { warmMediaCardProps } from './lib/warm-media-card-props';
+
+/** Manifest entry from generate-project-media.mjs (URLs already carry `?v=<hash>`). */
+type ProjectMediaEntry = {
+  mediaType: 'image' | 'video';
+  url: string;
+  aspectRatio?: number;
+  lqip?: string;
+  poster?: string;
+  mobileUrl?: string;
+  mobileAspectRatio?: number;
+  mobileLqip?: string;
+};
 
 /**
  * HOW TO ADD YOUR REAL CONTENT:
@@ -229,20 +236,25 @@ const INTRO_LOGO_IMG_CLASS_SUTTER_HILL =
 
 /** Projects with cards and optional logo from public/projects/<id>/ when present. */
 const projectsWithMedia: ProjectForView[] = projects.map((project) => {
-  const folderCards = projectMedia[project.id as keyof typeof projectMedia];
+  const folderCards = projectMedia[project.id as keyof typeof projectMedia] as
+    | ProjectMediaEntry[]
+    | undefined;
   const cards =
     folderCards && folderCards.length > 0
-      ? folderCards.map(
-          (entry: { mediaType: 'image' | 'video'; url: string; mobileUrl?: string }) => ({
-            mediaType: entry.mediaType,
-            imageUrl: entry.mediaType === 'image' ? publicAssetUrl(entry.url) : undefined,
-            imageUrlMobile:
-              entry.mediaType === 'image' && entry.mobileUrl
-                ? publicAssetUrl(entry.mobileUrl)
-                : undefined,
-            videoUrl: entry.mediaType === 'video' ? publicAssetUrl(entry.url) : undefined,
-          })
-        )
+      ? folderCards.map((entry: ProjectMediaEntry) => ({
+          mediaType: entry.mediaType,
+          imageUrl: entry.mediaType === 'image' ? publicAssetUrl(entry.url) : undefined,
+          imageUrlMobile:
+            entry.mediaType === 'image' && entry.mobileUrl
+              ? publicAssetUrl(entry.mobileUrl)
+              : undefined,
+          videoUrl: entry.mediaType === 'video' ? publicAssetUrl(entry.url) : undefined,
+          posterUrl: entry.poster ? publicAssetUrl(entry.poster) : undefined,
+          lqip: entry.lqip,
+          lqipMobile: entry.mobileLqip,
+          preloadedAspectRatio: entry.aspectRatio,
+          preloadedMobileAspectRatio: entry.mobileAspectRatio,
+        }))
       : project.cards;
   const rawLogo = projectLogos[project.id as keyof typeof projectLogos];
   const logoUrl = typeof rawLogo === 'string' ? publicAssetUrl(rawLogo) : rawLogo;
@@ -353,67 +365,56 @@ function isDesktopSafariWebKit(): boolean {
   );
 }
 
-/** Maps public media URLs (as on `ProjectCard`) → preloaded video first frame / aspect ratios for video + images. */
-function useMediaWarmupMaps() {
-  const [warm, setWarm] = useState<{
-    frames: Map<string, string>;
-    ratios: Map<string, number>;
-    imageRatios: Map<string, number>;
-  }>(() => ({
-    frames: new Map(),
-    ratios: new Map(),
-    imageRatios: new Map(),
-  }));
+/**
+ * Background HTTP-cache warmup so project switches are instant. Light assets
+ * (logos, video posters, images) for every project queue first, then the videos,
+ * in rail order. Cards mark their own in-DOM fetches so nothing downloads twice,
+ * and switching projects moves that project's pending URLs to the queue front.
+ */
+function projectPrefetchUrls(project: (typeof projectsWithMedia)[number]): {
+  light: string[];
+  heavy: string[];
+} {
+  const light: string[] = [];
+  const heavy: string[] = [];
+  const rawLogo = projectLogos[project.id as keyof typeof projectLogos];
+  if (typeof rawLogo === 'string') light.push(publicAssetUrl(rawLogo));
+  const mobileViewport = typeof window !== 'undefined' && window.innerWidth < 768;
+  for (const card of project.cards) {
+    if (card.posterUrl) light.push(card.posterUrl);
+    if (card.mediaType === 'image') {
+      const url = mobileViewport ? card.imageUrlMobile ?? card.imageUrl : card.imageUrl;
+      if (url) light.push(url);
+    }
+    if (card.videoUrl) heavy.push(card.videoUrl);
+  }
+  return { light, heavy };
+}
 
+function useBackgroundMediaPrefetch(activeProject: string) {
   useEffect(() => {
-    let cancelled = false;
-    const ids = projects.map((p) => p.id);
-    preloadProjectMedia(ids, projectMedia as ProjectMediaJson, projectLogos as ProjectLogosJson).then(
-      ({ firstFrames, videoAspectRatios, imageAspectRatios }) => {
-        if (cancelled) return;
-        const frames = new Map<string, string>();
-        const ratios = new Map<string, number>();
-        const imageRatios = new Map<string, number>();
-        const bust =
-          typeof (projectMedia as ProjectMediaJson)._generatedAt === 'number'
-            ? `?v=${(projectMedia as ProjectMediaJson)._generatedAt}`
-            : '';
-        for (const id of ids) {
-          const entries = projectMedia[id as keyof typeof projectMedia];
-          if (!Array.isArray(entries)) continue;
-          for (const e of entries as {
-            mediaType: string;
-            url: string;
-            mobileUrl?: string;
-          }[]) {
-            const preloadKey = e.url + bust;
-            const publicUrl = publicAssetUrl(e.url);
-            if (e.mediaType === 'video') {
-              const frame = firstFrames.get(preloadKey);
-              const r = videoAspectRatios.get(preloadKey);
-              if (frame) frames.set(publicUrl, frame);
-              if (r != null && r > 0) ratios.set(publicUrl, r);
-            } else if (e.mediaType === 'image') {
-              const r = imageAspectRatios.get(preloadKey);
-              if (r != null && r > 0) imageRatios.set(publicUrl, r);
-              if (e.mobileUrl) {
-                const mk = e.mobileUrl + bust;
-                const mobilePublic = publicAssetUrl(e.mobileUrl);
-                const rm = imageAspectRatios.get(mk);
-                if (rm != null && rm > 0) imageRatios.set(mobilePublic, rm);
-              }
-            }
-          }
-        }
-        setWarm({ frames, ratios, imageRatios });
-      }
-    );
-    return () => {
-      cancelled = true;
-    };
+    const light: string[] = [];
+    const heavy: string[] = [];
+    for (const p of projectsWithMedia) {
+      const u = projectPrefetchUrls(p);
+      light.push(...u.light);
+      heavy.push(...u.heavy);
+    }
+    queueMediaPrefetch([...light, ...heavy]);
   }, []);
 
-  return warm;
+  const isFirstRun = useRef(true);
+  useEffect(() => {
+    if (isFirstRun.current) {
+      // Initial project's media is already loading via its mounted cards.
+      isFirstRun.current = false;
+      return;
+    }
+    const p = projectsWithMedia.find((x) => x.id === activeProject);
+    if (!p) return;
+    const u = projectPrefetchUrls(p);
+    prioritizeMediaPrefetch([...u.light, ...u.heavy]);
+  }, [activeProject]);
 }
 
 export default function App() {
@@ -432,7 +433,7 @@ export default function App() {
     () => typeof window === 'undefined' || window.innerWidth >= 768
   );
   const mobileShellRevealCompleteRef = useRef(false);
-  const mediaWarm = useMediaWarmupMaps();
+  useBackgroundMediaPrefetch(activeProject);
   const [isPressed, setIsPressed] = useState(false);
   const [rubberBandOffset, setRubberBandOffset] = useState(0);
   const rubberBandOffsetRef = useRef(0);
@@ -766,8 +767,7 @@ export default function App() {
     };
   }, [isMobile, activeProject, currentProject.cards.length]);
 
-  /** Warmup / WebKit: cards gain height after media metrics arrive — late remeasure without needing a scroll. */
-  const mediaWarmResizeKey = mediaWarm.frames.size + mediaWarm.imageRatios.size + mediaWarm.ratios.size;
+  /** WebKit: late remeasure after fonts/masks settle — aspect ratios come from the manifest so no media wait. */
   useEffect(() => {
     if (isMobile) return;
     const a = window.setTimeout(() => desktopCarouselRemeasureRef.current?.(), 40);
@@ -778,7 +778,7 @@ export default function App() {
       window.clearTimeout(b);
       window.clearTimeout(c);
     };
-  }, [isMobile, activeProject, mediaWarmResizeKey]);
+  }, [isMobile, activeProject]);
 
   /** `mousemove` / `mouseup` on `window` so drag isn’t cut short when the cursor leaves the rail (was killing velocity → snap). */
   const carouselWindowDragCleanup = useRef<(() => void) | null>(null);
@@ -1353,7 +1353,6 @@ export default function App() {
             rubberBandOffset={rubberBandOffset}
             currentProject={currentProject}
             desktopLyftRailScale={desktopLyftRailScale}
-            mediaWarm={mediaWarm}
           />
         </div>
       </div>
@@ -1469,7 +1468,6 @@ export default function App() {
                       key={index}
                       {...card}
                       desktopRailWidthScale={desktopLyftRailScale ?? 1}
-                      {...warmMediaCardProps(card.imageUrl, card.imageUrlMobile, card.videoUrl, mediaWarm)}
                     />
                   ))
                 )}

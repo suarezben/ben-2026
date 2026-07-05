@@ -4,7 +4,6 @@ import { IntroCard } from './intro-card';
 import { ProjectCard } from './project-card';
 import { SutterHillLogoGrid } from './sutter-hill-logo-grid';
 import { carouselFlexGapPx, carouselRowJustifyContent } from '../lib/carousel-flex-gap';
-import { warmMediaCardProps, type MediaWarmMaps } from '../lib/warm-media-card-props';
 
 type Intro = ComponentProps<typeof IntroCard>;
 type Card = ComponentProps<typeof ProjectCard>;
@@ -28,7 +27,6 @@ export function DesktopCarouselRail({
   rubberBandOffset,
   currentProject,
   desktopLyftRailScale,
-  mediaWarm,
 }: {
   scrollContainerRef: RefObject<HTMLDivElement | null>;
   desktopCarouselZoomRef: RefObject<HTMLDivElement | null>;
@@ -43,7 +41,6 @@ export function DesktopCarouselRail({
   rubberBandOffset: number;
   currentProject: DesktopCarouselProject;
   desktopLyftRailScale: number | undefined;
-  mediaWarm: MediaWarmMaps;
 }) {
   return (
     <div
@@ -103,12 +100,6 @@ export function DesktopCarouselRail({
                     <ProjectCard
                       {...card}
                       desktopRailWidthScale={desktopLyftRailScale ?? 1}
-                      {...warmMediaCardProps(
-                        card.imageUrl,
-                        card.imageUrlMobile,
-                        card.videoUrl,
-                        mediaWarm
-                      )}
                     />
                   </div>
                 ))
