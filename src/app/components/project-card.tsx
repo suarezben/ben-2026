@@ -3,6 +3,7 @@ import { TVStaticCanvas } from "./tv-static-canvas";
 import { getSvgPath } from 'figma-squircle';
 import { useId, useMemo, useRef, useEffect, useState, type SyntheticEvent } from 'react';
 import { useIs2xlViewport } from '../hooks/use-is-2xl-viewport';
+import { markMediaFetched } from '../lib/prefetch-media';
 import {
   DESKTOP_RAIL_HEIGHT_2XL,
   DESKTOP_RAIL_HEIGHT_MD,
@@ -40,15 +41,32 @@ interface ProjectCardProps {
   videoUrl?: string;
   mediaType: 'image' | 'video' | 'placeholder';
   alt?: string;
-  /** When set, this card's video was preloaded; use this as poster and show video immediately (no loading/blur). */
-  preloadedFirstFrame?: string;
-  preloadedVideoReady?: boolean;
-  /** Aspect ratio from preload so layout is correct without waiting for video metadata or image decode. */
+  /** Build-time first-frame poster (videos) — real URL, cached alongside the video. */
+  posterUrl?: string;
+  /** Build-time tiny blurred placeholder (data URI) — paints instantly with zero network. */
+  lqip?: string;
+  /** LQIP for `imageUrlMobile` when it differs from desktop art. */
+  lqipMobile?: string;
+  /** Aspect ratio from the build manifest so layout is correct on first paint. */
   preloadedAspectRatio?: number;
-  /** Preload aspect for `imageUrlMobile` when it differs from desktop art. */
+  /** Manifest aspect for `imageUrlMobile` when it differs from desktop art. */
   preloadedMobileAspectRatio?: number;
   /** Desktop rail width multiplier (e.g. 0.85 for Lyft). */
   desktopRailWidthScale?: number;
+}
+
+/** md breakpoint, synchronous initial value — gates which of the two <video> elements gets a src. */
+function useIsMdUp(): boolean {
+  const [isMdUp, setIsMdUp] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches
+  );
+  useEffect(() => {
+    const mql = window.matchMedia('(min-width: 768px)');
+    const onChange = () => setIsMdUp(mql.matches);
+    mql.addEventListener('change', onChange);
+    return () => mql.removeEventListener('change', onChange);
+  }, []);
+  return isMdUp;
 }
 
 export function ProjectCard({
@@ -57,13 +75,15 @@ export function ProjectCard({
   videoUrl,
   mediaType,
   alt = 'Project media',
-  preloadedFirstFrame,
-  preloadedVideoReady = false,
+  posterUrl,
+  lqip,
+  lqipMobile,
   preloadedAspectRatio,
   preloadedMobileAspectRatio,
   desktopRailWidthScale = 1,
 }: ProjectCardProps) {
   const is2xl = useIs2xlViewport();
+  const isMdUp = useIsMdUp();
   const id = useId().replace(/:/g, '');
   const cardContainerRef = useRef<HTMLDivElement>(null);
   const mobileVideoRef = useRef<HTMLVideoElement>(null);
@@ -77,10 +97,12 @@ export function ProjectCard({
   /** Mobile: measured width and computed height (full-width fit; landscape cropped to square). */
   const [mobileSize, setMobileSize] = useState<{ w: number; h: number } | null>(null);
   const [isInView, setIsInView] = useState(false);
-  const [hasBeenInView, setHasBeenInView] = useState(!!preloadedVideoReady);
-  /** False until decoded frames are ready — do not tie to `preloadedVideoReady` or the poster flashes away too early. */
+  const [hasBeenInView, setHasBeenInView] = useState(false);
+  /** False until decoded frames are ready — the poster keeps covering the video until real frames exist. */
   const [videoStarted, setVideoStarted] = useState(false);
-  const [videoSrc, setVideoSrc] = useState(preloadedVideoReady && videoUrl ? videoUrl : '');
+  const [videoSrc, setVideoSrc] = useState('');
+  /** Poster (real file) fades in over the inline LQIP once decoded. */
+  const [posterReady, setPosterReady] = useState(false);
   /** Image: blur placeholder until decode (shared URL on both breakpoints). */
   const [imageReady, setImageReady] = useState(false);
   /** When `imageUrlMobile` is set, separate decode state per breakpoint. */
@@ -187,20 +209,28 @@ export function ProjectCard({
     setAspectRatio(16 / 9);
   }, [mediaType, videoUrl, preloadedAspectRatio]);
 
-  // Attach file URL when pre-warmed or after first viewport entry; keep it attached to avoid reload flashes.
+  // Poster / image elements fetch natively as soon as the card mounts — tell the
+  // background prefetcher so it never downloads the same URL in parallel.
+  useEffect(() => {
+    markMediaFetched([imageUrl, imageUrlMobile, posterUrl]);
+  }, [imageUrl, imageUrlMobile, posterUrl]);
+
+  // Attach file URL after first viewport entry; keep it attached to avoid reload flashes.
   useEffect(() => {
     if (mediaType !== 'video' || !videoUrl) return;
-    if (preloadedVideoReady) {
+    if (isInView || hasBeenInView) {
       setVideoSrc(videoUrl);
-      return;
+      markMediaFetched([videoUrl]);
+    } else {
+      setVideoSrc('');
     }
-    setVideoSrc(isInView || hasBeenInView ? videoUrl : '');
-  }, [mediaType, videoUrl, isInView, hasBeenInView, preloadedVideoReady]);
+  }, [mediaType, videoUrl, isInView, hasBeenInView]);
 
-  // New clip: hide video until real frames land (poster img stays visible meanwhile).
+  // New clip: hide video until real frames land (LQIP/poster stay visible meanwhile).
   useEffect(() => {
     if (mediaType !== 'video') return;
     setVideoStarted(false);
+    setPosterReady(false);
   }, [mediaType, videoUrl]);
 
   // Intersection Observer: play video in view, pause others
@@ -280,9 +310,11 @@ export function ProjectCard({
     }
   };
 
-  const posterFadeClass = preloadedVideoReady
-    ? 'transition-opacity duration-200 ease-out'
-    : 'transition-opacity duration-300 ease-out';
+  const posterFadeClass = 'transition-opacity duration-250 ease-out';
+  /** Blurred inline placeholder — paints on first frame, no network. */
+  const lqipImgClass =
+    'absolute inset-0 z-[1] h-full w-full origin-center scale-[1.06] pointer-events-none';
+  const lqipImgStyle = { filter: 'blur(18px)' } as const;
   const strokeOverlayMobile =
     strokeMobile !== 'none' ? (
       <svg
@@ -347,17 +379,15 @@ export function ProjectCard({
         >
         {mediaType === 'video' && videoUrl && (
           <>
-            {preloadedFirstFrame ? (
+            {lqip ? (
               <img
-                src={preloadedFirstFrame}
+                src={lqip}
                 alt=""
-                loading="eager"
-                decoding="sync"
-                fetchPriority="high"
-                className={`absolute inset-0 z-[1] h-full w-full origin-center scale-[1.02] object-contain pointer-events-none ${posterFadeClass} ${
+                aria-hidden
+                className={`${lqipImgClass} object-contain ${posterFadeClass} ${
                   videoStarted ? 'opacity-0' : 'opacity-100'
                 }`}
-                aria-hidden
+                style={lqipImgStyle}
               />
             ) : (
               !videoStarted && (
@@ -367,10 +397,22 @@ export function ProjectCard({
                 />
               )
             )}
+            {posterUrl && (
+              <img
+                src={posterUrl}
+                alt=""
+                aria-hidden
+                loading="eager"
+                onLoad={() => setPosterReady(true)}
+                className={`absolute inset-0 z-[1] h-full w-full origin-center scale-[1.02] object-contain pointer-events-none ${posterFadeClass} ${
+                  posterReady && !videoStarted ? 'opacity-100' : 'opacity-0'
+                }`}
+              />
+            )}
             <video
               ref={mobileVideoRef}
-              src={videoSrc}
-              poster={preloadedFirstFrame}
+              src={(!isMdUp ? videoSrc : '') || undefined}
+              poster={posterUrl}
               preload="auto"
               onLoadedMetadata={(e) => {
                 const v = e.currentTarget;
@@ -397,11 +439,23 @@ export function ProjectCard({
         )}
         {mediaType === 'image' && imageUrl && mobileImgSrc && (
           <>
-            {!mobileImgReady && (
-              <div
-                aria-hidden
-                className="absolute inset-0 z-[1] bg-gradient-to-br from-[#dcdcdc] via-[#ececec] to-[#d4d4d4] pointer-events-none"
-              />
+            {(imageUrlMobile ? lqipMobile ?? lqip : lqip) ? (
+              !mobileImgReady && (
+                <img
+                  src={imageUrlMobile ? lqipMobile ?? lqip : lqip}
+                  alt=""
+                  aria-hidden
+                  className={`${lqipImgClass} object-contain`}
+                  style={lqipImgStyle}
+                />
+              )
+            ) : (
+              !mobileImgReady && (
+                <div
+                  aria-hidden
+                  className="absolute inset-0 z-[1] bg-gradient-to-br from-[#dcdcdc] via-[#ececec] to-[#d4d4d4] pointer-events-none"
+                />
+              )
             )}
             <ImageWithFallback
               src={mobileImgSrc}
@@ -409,10 +463,9 @@ export function ProjectCard({
               onLoad={() =>
                 splitImageArt ? setMobileImageReady(true) : setImageReady(true)
               }
-              className={`absolute inset-0 z-[2] h-full w-full object-contain pointer-events-none transition-[filter,opacity] duration-300 ease-out ${
-                mobileImgReady ? 'opacity-100' : 'opacity-90'
+              className={`absolute inset-0 z-[2] h-full w-full object-contain pointer-events-none ${posterFadeClass} ${
+                mobileImgReady ? 'opacity-100' : 'opacity-0'
               }`}
-              style={mobileImgReady ? undefined : { filter: 'blur(16px)', transform: 'scale(1.03)' }}
               loading="eager"
               decoding="async"
             />
@@ -436,17 +489,15 @@ export function ProjectCard({
       >
         {mediaType === 'video' && videoUrl && (
           <>
-            {preloadedFirstFrame ? (
+            {lqip ? (
               <img
-                src={preloadedFirstFrame}
+                src={lqip}
                 alt=""
-                loading="eager"
-                decoding="sync"
-                fetchPriority="high"
-                className={`absolute inset-0 z-[1] h-full w-full origin-center scale-[1.02] object-cover pointer-events-none ${posterFadeClass} ${
+                aria-hidden
+                className={`${lqipImgClass} object-cover ${posterFadeClass} ${
                   videoStarted ? 'opacity-0' : 'opacity-100'
                 }`}
-                aria-hidden
+                style={lqipImgStyle}
               />
             ) : (
               !videoStarted && (
@@ -456,10 +507,22 @@ export function ProjectCard({
                 />
               )
             )}
+            {posterUrl && (
+              <img
+                src={posterUrl}
+                alt=""
+                aria-hidden
+                loading="eager"
+                onLoad={() => setPosterReady(true)}
+                className={`absolute inset-0 z-[1] h-full w-full origin-center scale-[1.02] object-cover pointer-events-none ${posterFadeClass} ${
+                  posterReady && !videoStarted ? 'opacity-100' : 'opacity-0'
+                }`}
+              />
+            )}
             <video
               ref={desktopVideoRef}
-              src={videoSrc}
-              poster={preloadedFirstFrame}
+              src={(isMdUp ? videoSrc : '') || undefined}
+              poster={posterUrl}
               preload="auto"
               onLoadedMetadata={(e) => {
                 const v = e.currentTarget;
@@ -486,11 +549,23 @@ export function ProjectCard({
         )}
         {mediaType === 'image' && imageUrl && (
           <>
-            {!desktopImgReady && (
-              <div
-                aria-hidden
-                className="absolute inset-0 z-[1] bg-gradient-to-br from-[#dcdcdc] via-[#ececec] to-[#d4d4d4] pointer-events-none"
-              />
+            {lqip ? (
+              !desktopImgReady && (
+                <img
+                  src={lqip}
+                  alt=""
+                  aria-hidden
+                  className={`${lqipImgClass} object-cover`}
+                  style={lqipImgStyle}
+                />
+              )
+            ) : (
+              !desktopImgReady && (
+                <div
+                  aria-hidden
+                  className="absolute inset-0 z-[1] bg-gradient-to-br from-[#dcdcdc] via-[#ececec] to-[#d4d4d4] pointer-events-none"
+                />
+              )
             )}
             <ImageWithFallback
               src={imageUrl}
@@ -498,10 +573,9 @@ export function ProjectCard({
               onLoad={() =>
                 splitImageArt ? setDesktopImageReady(true) : setImageReady(true)
               }
-              className={`absolute inset-0 z-[2] h-full w-full object-cover pointer-events-none transition-[filter,opacity] duration-300 ease-out ${
-                desktopImgReady ? 'opacity-100' : 'opacity-90'
+              className={`absolute inset-0 z-[2] h-full w-full object-cover pointer-events-none ${posterFadeClass} ${
+                desktopImgReady ? 'opacity-100' : 'opacity-0'
               }`}
-              style={desktopImgReady ? undefined : { filter: 'blur(16px)', transform: 'scale(1.03)' }}
               loading="eager"
               decoding="async"
             />
