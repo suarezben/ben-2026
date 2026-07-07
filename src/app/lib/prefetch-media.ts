@@ -3,11 +3,16 @@
  * projects is instant, without competing with the visible project's media.
  *
  * - URLs must be byte-identical to the ones the <img>/<video> elements use, or the
- *   cache entry is wasted (this was the root cause of the old double-download bug).
- * - Sequential (one request at a time) with `priority: 'low'` so the active
- *   project's own media wins bandwidth.
- * - Starts after window `load` plus a short delay; skipped entirely on Save-Data
- *   or very slow connections.
+ *   cache entry is wasted (a URL mismatch here once caused every asset to download twice).
+ * - Sequential (one asset at a time) so the active project's own media wins bandwidth.
+ * - Primary transport is <link rel="prefetch"> — document-initiated and browser-managed
+ *   at idle priority. fetch()/XHR are a fallback for engines without prefetch support
+ *   (Safari); some embedded webviews stall programmatic requests entirely, and a stalled
+ *   fetch holds one of the per-origin connections, which can starve <img>/<video> loads.
+ * - Every item has a hard timeout, and repeated consecutive failures trip a circuit
+ *   breaker that disables prefetching for the session (better no warmup than a jammed
+ *   connection pool).
+ * - Starts after window `load` plus a short delay; skipped on Save-Data / 2G.
  */
 
 const queued: string[] = [];
@@ -15,8 +20,15 @@ const seen = new Set<string>();
 let running = false;
 let releaseStartGate: (() => void) | null = null;
 let startGate: Promise<void> | null = null;
+let disabled = false;
+let consecutiveFailures = 0;
+
+/** Cancel hook for the in-flight item (abort fetch / remove link). */
+let cancelInFlight: ((url: string) => void) | null = null;
 
 const START_DELAY_MS = 1200;
+const ITEM_TIMEOUT_MS = 60_000;
+const MAX_CONSECUTIVE_FAILURES = 2;
 
 function connectionAllowsPrefetch(): boolean {
   const conn = (navigator as Navigator & {
@@ -26,6 +38,11 @@ function connectionAllowsPrefetch(): boolean {
   if (conn.saveData) return false;
   if (conn.effectiveType && /(^|-)2g$/.test(conn.effectiveType)) return false;
   return true;
+}
+
+function supportsLinkPrefetch(): boolean {
+  const link = document.createElement('link');
+  return !!link.relList?.supports?.('prefetch');
 }
 
 function afterWindowLoad(): Promise<void> {
@@ -39,16 +56,73 @@ function afterWindowLoad(): Promise<void> {
   return startGate;
 }
 
+/** Warm one URL via <link rel="prefetch">; resolves true on success, false on error/timeout. */
+function prefetchViaLink(url: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const link = document.createElement('link');
+    let settled = false;
+    const settle = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      cancelInFlight = null;
+      clearTimeout(timer);
+      link.remove();
+      resolve(ok);
+    };
+    const timer = setTimeout(() => settle(false), ITEM_TIMEOUT_MS);
+    link.rel = 'prefetch';
+    link.as = url.includes('.mp4') ? 'video' : 'image';
+    link.href = url;
+    link.onload = () => settle(true);
+    link.onerror = () => settle(false);
+    // Media element took over this URL — get out of its way (avoids the HTTP-cache
+    // write lock stalling the element's own request behind the prefetch).
+    cancelInFlight = (u) => {
+      if (u === url) settle(true);
+    };
+    document.head.appendChild(link);
+  });
+}
+
+/** Fallback for engines without link prefetch (Safari): plain low-priority fetch. */
+function prefetchViaFetch(url: string): Promise<boolean> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ITEM_TIMEOUT_MS);
+  // A markMediaFetched abort means a media element took over — count it as success.
+  let takenOver = false;
+  cancelInFlight = (u) => {
+    if (u === url) {
+      takenOver = true;
+      controller.abort();
+    }
+  };
+  return fetch(url, { priority: 'low', signal: controller.signal } as RequestInit)
+    .then((r) => {
+      // Drain so the body actually lands in the HTTP cache.
+      return r.arrayBuffer().then(() => true);
+    })
+    .catch(() => takenOver)
+    .finally(() => {
+      clearTimeout(timer);
+      cancelInFlight = null;
+    });
+}
+
 async function run(): Promise<void> {
   if (running) return;
   running = true;
   await afterWindowLoad();
-  while (queued.length > 0) {
+  const useLink = supportsLinkPrefetch();
+  while (queued.length > 0 && !disabled) {
     const url = queued.shift()!;
-    try {
-      await fetch(url, { priority: 'low' } as RequestInit);
-    } catch {
-      // Offline / aborted — drop and continue; the media element will retry on demand.
+    const ok = await (useLink ? prefetchViaLink(url) : prefetchViaFetch(url));
+    if (ok) {
+      consecutiveFailures = 0;
+    } else if (++consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+      // Environment can't prefetch (offline, blocked requests, jammed pool) — stop
+      // for the session rather than holding connections hostage.
+      disabled = true;
+      queued.length = 0;
     }
   }
   running = false;
@@ -56,12 +130,14 @@ async function run(): Promise<void> {
 
 /** Append URLs to the prefetch queue (deduped across the session). */
 export function queueMediaPrefetch(urls: string[]): void {
+  if (disabled) return;
   for (const url of urls) {
     if (seen.has(url)) continue;
     seen.add(url);
     queued.push(url);
   }
   if (!connectionAllowsPrefetch()) {
+    disabled = true;
     queued.length = 0;
     return;
   }
@@ -70,7 +146,9 @@ export function queueMediaPrefetch(urls: string[]): void {
 
 /**
  * Mark URLs the DOM is already fetching natively (<img> src, <video> src/poster) so the
- * background queue never downloads the same bytes in parallel with a media element.
+ * background queue never competes with a media element for the same bytes. Also cancels
+ * an in-flight prefetch of that URL (Chrome serializes same-URL requests behind the
+ * cache write lock, which would stall the element until the prefetch finished).
  */
 export function markMediaFetched(urls: (string | undefined)[]): void {
   for (const url of urls) {
@@ -78,6 +156,7 @@ export function markMediaFetched(urls: (string | undefined)[]): void {
     seen.add(url);
     const i = queued.indexOf(url);
     if (i !== -1) queued.splice(i, 1);
+    cancelInFlight?.(url);
   }
 }
 
