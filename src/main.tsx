@@ -4,6 +4,9 @@ import "./styles/index.css";
 import { waitForWebFonts } from "./wait-for-webfonts";
 
 const rootEl = document.getElementById("root");
+if (import.meta.env.DEV && new URLSearchParams(location.search).has('mediaDebug')) {
+  void import('../scripts/diagnostics/media-timeline.js');
+}
 if (!rootEl) {
   throw new Error("Missing #root");
 }
@@ -24,4 +27,3 @@ void waitForWebFonts()
       );
     }
   });
-  
