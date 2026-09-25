@@ -101,8 +101,6 @@ export function ProjectCard({
   /** False until decoded frames are ready — the poster keeps covering the video until real frames exist. */
   const [videoStarted, setVideoStarted] = useState(false);
   const [videoSrc, setVideoSrc] = useState('');
-  /** Poster (real file) fades in over the inline LQIP once decoded. */
-  const [posterReady, setPosterReady] = useState(false);
   /** Image: blur placeholder until decode (shared URL on both breakpoints). */
   const [imageReady, setImageReady] = useState(false);
   /** When `imageUrlMobile` is set, separate decode state per breakpoint. */
@@ -230,7 +228,6 @@ export function ProjectCard({
   useEffect(() => {
     if (mediaType !== 'video') return;
     setVideoStarted(false);
-    setPosterReady(false);
   }, [mediaType, videoUrl]);
 
   // Intersection Observer: play video in view, pause others
@@ -403,9 +400,8 @@ export function ProjectCard({
                 alt=""
                 aria-hidden
                 loading="eager"
-                onLoad={() => setPosterReady(true)}
-                className={`absolute inset-0 z-[1] h-full w-full origin-center scale-[1.02] object-contain pointer-events-none ${posterFadeClass} ${
-                  posterReady && !videoStarted ? 'opacity-100' : 'opacity-0'
+                className={`absolute inset-0 z-[3] h-full w-full origin-center scale-[1.02] object-contain pointer-events-none ${
+                  videoStarted ? 'opacity-0' : 'opacity-100'
                 }`}
               />
             )}
@@ -421,15 +417,7 @@ export function ProjectCard({
                 }
               }}
               onLoadedData={onVideoDecodedFrame}
-              onCanPlay={() => {
-                setVideoStarted(true);
-              }}
-              onPlaying={() => {
-                setVideoStarted(true);
-              }}
-              className={`absolute inset-0 z-[2] h-full w-full origin-center scale-[1.02] object-contain cursor-default ${posterFadeClass} ${
-                videoStarted ? 'opacity-100' : 'opacity-0'
-              }`}
+              className="absolute inset-0 z-[2] h-full w-full origin-center scale-[1.02] object-contain cursor-default opacity-100"
               autoPlay
               loop
               muted
@@ -440,22 +428,22 @@ export function ProjectCard({
         {mediaType === 'image' && imageUrl && mobileImgSrc && (
           <>
             {(imageUrlMobile ? lqipMobile ?? lqip : lqip) ? (
-              !mobileImgReady && (
-                <img
-                  src={imageUrlMobile ? lqipMobile ?? lqip : lqip}
-                  alt=""
-                  aria-hidden
-                  className={`${lqipImgClass} object-contain`}
-                  style={lqipImgStyle}
-                />
-              )
+              <img
+                src={imageUrlMobile ? lqipMobile ?? lqip : lqip}
+                alt=""
+                aria-hidden
+                className={`${lqipImgClass} object-contain ${posterFadeClass} ${
+                  mobileImgReady ? 'opacity-0' : 'opacity-100'
+                }`}
+                style={lqipImgStyle}
+              />
             ) : (
-              !mobileImgReady && (
-                <div
-                  aria-hidden
-                  className="absolute inset-0 z-[1] bg-gradient-to-br from-[#dcdcdc] via-[#ececec] to-[#d4d4d4] pointer-events-none"
-                />
-              )
+              <div
+                aria-hidden
+                className={`absolute inset-0 z-[1] bg-gradient-to-br from-[#dcdcdc] via-[#ececec] to-[#d4d4d4] pointer-events-none ${posterFadeClass} ${
+                  mobileImgReady ? 'opacity-0' : 'opacity-100'
+                }`}
+              />
             )}
             <ImageWithFallback
               src={mobileImgSrc}
@@ -513,9 +501,8 @@ export function ProjectCard({
                 alt=""
                 aria-hidden
                 loading="eager"
-                onLoad={() => setPosterReady(true)}
-                className={`absolute inset-0 z-[1] h-full w-full origin-center scale-[1.02] object-cover pointer-events-none ${posterFadeClass} ${
-                  posterReady && !videoStarted ? 'opacity-100' : 'opacity-0'
+                className={`absolute inset-0 z-[3] h-full w-full origin-center scale-[1.02] object-cover pointer-events-none ${
+                  videoStarted ? 'opacity-0' : 'opacity-100'
                 }`}
               />
             )}
@@ -531,15 +518,7 @@ export function ProjectCard({
                 }
               }}
               onLoadedData={onVideoDecodedFrame}
-              onCanPlay={() => {
-                setVideoStarted(true);
-              }}
-              onPlaying={() => {
-                setVideoStarted(true);
-              }}
-              className={`absolute inset-0 z-[2] h-full w-full origin-center scale-[1.02] object-cover cursor-none ${posterFadeClass} ${
-                videoStarted ? 'opacity-100' : 'opacity-0'
-              }`}
+              className="absolute inset-0 z-[2] h-full w-full origin-center scale-[1.02] object-cover cursor-none opacity-100"
               autoPlay
               loop
               muted
@@ -550,22 +529,22 @@ export function ProjectCard({
         {mediaType === 'image' && imageUrl && (
           <>
             {lqip ? (
-              !desktopImgReady && (
-                <img
-                  src={lqip}
-                  alt=""
-                  aria-hidden
-                  className={`${lqipImgClass} object-cover`}
-                  style={lqipImgStyle}
-                />
-              )
+              <img
+                src={lqip}
+                alt=""
+                aria-hidden
+                className={`${lqipImgClass} object-cover ${posterFadeClass} ${
+                  desktopImgReady ? 'opacity-0' : 'opacity-100'
+                }`}
+                style={lqipImgStyle}
+              />
             ) : (
-              !desktopImgReady && (
-                <div
-                  aria-hidden
-                  className="absolute inset-0 z-[1] bg-gradient-to-br from-[#dcdcdc] via-[#ececec] to-[#d4d4d4] pointer-events-none"
-                />
-              )
+              <div
+                aria-hidden
+                className={`absolute inset-0 z-[1] bg-gradient-to-br from-[#dcdcdc] via-[#ececec] to-[#d4d4d4] pointer-events-none ${posterFadeClass} ${
+                  desktopImgReady ? 'opacity-0' : 'opacity-100'
+                }`}
+              />
             )}
             <ImageWithFallback
               src={imageUrl}
