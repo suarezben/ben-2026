@@ -21,6 +21,7 @@ import { queueMediaPrefetch, prioritizeMediaPrefetch } from './lib/prefetch-medi
 import { LYFT_DESKTOP_RAIL_WIDTH_SCALE } from './lib/desktop-rail-layout';
 import {
   DEFAULT_SIGNATURE_MOTION,
+  LEGACY_SIGNATURE_MOTION_STORAGE_KEY,
   SIGNATURE_MOTION_STORAGE_KEY,
   type SignatureMotionSettings,
 } from './lib/signature-motion-settings';
@@ -467,9 +468,24 @@ function initialSignatureMotionSettings(): SignatureMotionSettings {
   }
   try {
     const saved = window.localStorage.getItem(SIGNATURE_MOTION_STORAGE_KEY);
-    return saved
-      ? resolveSignatureMotionSettings(JSON.parse(saved))
-      : DEFAULT_SIGNATURE_MOTION;
+    if (saved) {
+      const resolved = resolveSignatureMotionSettings(JSON.parse(saved));
+      return resolved.mobileY === 40
+        ? { ...resolved, mobileY: DEFAULT_SIGNATURE_MOTION.mobileY }
+        : resolved;
+    }
+
+    const legacySaved = window.localStorage.getItem(
+      LEGACY_SIGNATURE_MOTION_STORAGE_KEY
+    );
+    if (!legacySaved) return DEFAULT_SIGNATURE_MOTION;
+
+    // Preserve the user's spring tuning while migrating the corrected mobile
+    // resting position from the previous, visibly low 40px default.
+    return {
+      ...resolveSignatureMotionSettings(JSON.parse(legacySaved)),
+      mobileY: DEFAULT_SIGNATURE_MOTION.mobileY,
+    };
   } catch {
     return DEFAULT_SIGNATURE_MOTION;
   }

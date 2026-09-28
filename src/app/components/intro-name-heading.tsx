@@ -10,7 +10,6 @@ import {
  * (desktop frame 299×59, mobile 122×24; scales with text breakpoints).
  */
 const NAME_SIGNATURE_SRC = '/images/bensuarez-name.png';
-const EMAIL_ICON_SRC = '/icons/email-icon.svg';
 const EMAIL_HREF = 'mailto:Benjamin.r.suarez@gmail.com';
 // Avoid the transformed → untransformed raster handoff that can flash a
 // transparent PNG for one frame when a spring lands at an identity transform.
@@ -139,7 +138,13 @@ export function IntroNameHeading({
     : 'block h-[28px] w-[142px] shrink-0 bg-[#121111] lg:h-[35px] lg:w-[177px] xl:h-[43px] xl:w-[213px]';
 
   return (
-    <div className="flex items-center justify-between gap-4">
+    <div
+      className={
+        isMobile
+          ? 'flex items-center justify-between gap-0'
+          : 'flex items-center justify-between gap-4'
+      }
+    >
       <motion.div
         className={
           isMobile
@@ -228,7 +233,7 @@ export function IntroNameHeading({
         aria-label="Primary"
         className={
           isMobile
-            ? 'ml-3 flex w-[92px] shrink-0 items-center justify-between'
+            ? 'flex w-[92px] -translate-y-[22px] shrink-0 flex-col items-end justify-center gap-3 text-[22px] font-light leading-[1.08] tracking-[-0.99px] text-[rgb(18_17_17/0.7)]'
             : 'ml-6 flex shrink-0 items-center gap-[1.35em] text-[16px] text-[rgb(18_17_17/0.7)] lg:text-[20px] xl:text-[24px]'
         }
       >
@@ -239,7 +244,7 @@ export function IntroNameHeading({
           whileTap={{ scale: 0.97 }}
           className={
             isMobile
-              ? 'relative grid w-[48px] border-0 bg-transparent p-0 text-left font-light text-[#121111] focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(18_17_17/0.35)] focus-visible:ring-offset-2'
+              ? 'relative grid min-h-11 w-full items-end justify-items-end border-0 bg-transparent px-1.5 py-0 text-right text-[22px] font-light leading-[1.08] tracking-[-0.99px] text-[rgb(18_17_17/0.7)] focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(18_17_17/0.35)] focus-visible:ring-offset-2'
               : 'relative grid w-[3.25em] border-0 bg-transparent p-0 text-left font-light leading-[normal] text-inherit text-[16px] transition-colors duration-200 hover:text-[#121111] focus-visible:rounded-sm focus-visible:text-[#121111] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(18_17_17/0.35)] focus-visible:ring-offset-2 lg:text-[20px] xl:text-[24px]'
           }
         >
@@ -250,7 +255,7 @@ export function IntroNameHeading({
               animate={{ opacity: 1, filter: 'blur(0px)', transform: 'scale(1)' }}
               exit={{ opacity: 0, filter: 'blur(5px)', transform: 'scale(0.85)' }}
               transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
-              style={{ transformOrigin: 'left center' }}
+              style={{ transformOrigin: isMobile ? 'right center' : 'left center' }}
               className="col-start-1 row-start-1"
             >
               {isWriting ? 'Work' : 'Writing'}
@@ -263,22 +268,11 @@ export function IntroNameHeading({
           aria-label="Email Benjamin.r.suarez@gmail.com"
           className={
             isMobile
-              ? 'inline-flex h-8 w-8 shrink-0 items-center justify-center opacity-70 transition-opacity duration-200 hover:opacity-100 focus-visible:rounded-sm focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(18_17_17/0.35)] focus-visible:ring-offset-2'
+              ? 'inline-flex min-h-11 w-full shrink-0 items-start justify-end px-1.5 text-right font-light text-inherit focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(18_17_17/0.35)] focus-visible:ring-offset-2'
               : 'inline-flex shrink-0 items-center self-center text-inherit transition-colors duration-200 hover:text-[#121111] focus-visible:rounded-sm focus-visible:text-[#121111] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(18_17_17/0.35)] focus-visible:ring-offset-2'
           }
         >
-          {isMobile ? (
-            <img
-              src={EMAIL_ICON_SRC}
-              alt=""
-              aria-hidden="true"
-              width={20}
-              height={20}
-              className="block h-5 w-5 object-contain"
-            />
-          ) : (
-            'Email'
-          )}
+          {isMobile ? 'Contact' : 'Email'}
         </a>
       </nav>
     </div>

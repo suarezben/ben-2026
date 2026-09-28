@@ -35,7 +35,8 @@ export const DEFAULT_SIGNATURE_MOTION: SignatureMotionSettings = {
   desktopScale: 0.76,
   mobileScale: 0.84,
   desktopY: 18,
-  mobileY: 40,
+  mobileY: 8,
 };
 
-export const SIGNATURE_MOTION_STORAGE_KEY = 'ben-signature-motion-v2';
+export const LEGACY_SIGNATURE_MOTION_STORAGE_KEY = 'ben-signature-motion-v2';
+export const SIGNATURE_MOTION_STORAGE_KEY = 'ben-signature-motion-v3';
