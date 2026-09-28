@@ -69,3 +69,27 @@ barrier or layer change should wait for that correlation.
 - Production JS remains `index-_Vk4hq_L.js`, matching the live bundle name.
 - Production assets contain no diagnostic marker or module.
 - No changes to project-card.tsx, transition parameters, masks, scale, or design.
+
+## Follow-up: user-confirmed diagnostic difference
+
+The user reports that `?mediaDebug=1` is smooth while the plain localhost URL
+flickers. This is evidence that instrumentation may mask the issue, not proof
+that any particular layout read fixes it. The initial claim that diagnostics
+have no visual effect was too strong: read-only observation can alter timing.
+
+Development-only isolation modes are now available:
+
+- `?mediaDebug=reads`: the same per-frame video geometry, ancestor computed
+  style, and poster opacity reads for 2.5 seconds after button clicks; no
+  per-frame logging, media listeners, MutationObserver, or video callbacks.
+- `?mediaDebug=events`: media listeners, logs, and first-three-frame callbacks;
+  no geometry or computed-style reads and no requestAnimationFrame sampling.
+
+Compare in the same browser and window size, including warm repeat switches.
+These modes split groups of diagnostic work; they do not isolate an individual
+read or prove a compositor defect. Results are pending. Do not ship either
+mode as a production fix without further isolation and visual confirmation.
+
+The selected local Espresso video was subsequently published in 5057500, with
+its matching poster and hash 40c2e2d09f. The live video checksum was verified.
+That asset publication is separate from the unresolved flicker.

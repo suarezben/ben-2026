@@ -9,6 +9,8 @@ interface CustomCursorProps {
   isPressed: boolean;
 }
 
+type ForwardedCursorMove = CustomEvent<{ clientX: number; clientY: number }>;
+
 export function CustomCursor({ isPressed }: CustomCursorProps) {
   const cursorRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
@@ -17,16 +19,19 @@ export function CustomCursor({ isPressed }: CustomCursorProps) {
     const el = cursorRef.current;
     if (!el) return;
 
-    const onMove = (e: MouseEvent) => {
+    const moveTo = (clientX: number, clientY: number) => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       rafRef.current = requestAnimationFrame(() => {
         rafRef.current = null;
-        el.style.transform = `translate(${e.clientX - CURSOR_OFFSET}px, ${e.clientY - CURSOR_OFFSET}px)`;
+        el.style.transform = `translate(${clientX - CURSOR_OFFSET}px, ${clientY - CURSOR_OFFSET}px)`;
+        el.style.opacity = '1';
       });
     };
 
-    const onEnter = () => {
-      el.style.opacity = '1';
+    const onMove = (event: MouseEvent) => moveTo(event.clientX, event.clientY);
+    const onForwardedMove = (event: Event) => {
+      const { clientX, clientY } = (event as ForwardedCursorMove).detail;
+      moveTo(clientX, clientY);
     };
 
     const onLeave = () => {
@@ -34,12 +39,12 @@ export function CustomCursor({ isPressed }: CustomCursorProps) {
     };
 
     window.addEventListener('mousemove', onMove, { passive: true });
-    document.addEventListener('mouseenter', onEnter);
+    window.addEventListener('writing-cursor-move', onForwardedMove);
     document.addEventListener('mouseleave', onLeave);
 
     return () => {
       window.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseenter', onEnter);
+      window.removeEventListener('writing-cursor-move', onForwardedMove);
       document.removeEventListener('mouseleave', onLeave);
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
@@ -49,7 +54,7 @@ export function CustomCursor({ isPressed }: CustomCursorProps) {
     <div
       ref={cursorRef}
       className="fixed top-0 left-0 z-[100000] pointer-events-none will-change-transform transition-opacity duration-150"
-      style={{ transform: 'translate(0, 0)', opacity: 1, width: CURSOR_SIZE, height: CURSOR_SIZE }}
+      style={{ transform: 'translate(0, 0)', opacity: 0, width: CURSOR_SIZE, height: CURSOR_SIZE }}
       aria-hidden
     >
       <motion.div

@@ -4,6 +4,7 @@ import { getSvgPath } from 'figma-squircle';
 import { useId, useMemo, useRef, useEffect, useState, type SyntheticEvent } from 'react';
 import { useIs2xlViewport } from '../hooks/use-is-2xl-viewport';
 import { markMediaFetched } from '../lib/prefetch-media';
+import { createVideoPlayback } from '../lib/video-playback';
 import {
   DESKTOP_RAIL_HEIGHT_2XL,
   DESKTOP_RAIL_HEIGHT_MD,
@@ -101,6 +102,8 @@ export function ProjectCard({
   /** False until decoded frames are ready — the poster keeps covering the video until real frames exist. */
   const [videoStarted, setVideoStarted] = useState(false);
   const [videoSrc, setVideoSrc] = useState('');
+  const [playbackState, setPlaybackState] = useState('loading');
+  const retryPlayback = useRef<(() => void) | null>(null);
   /** Image: blur placeholder until decode (shared URL on both breakpoints). */
   const [imageReady, setImageReady] = useState(false);
   /** When `imageUrlMobile` is set, separate decode state per breakpoint. */
@@ -230,26 +233,28 @@ export function ProjectCard({
     setVideoStarted(false);
   }, [mediaType, videoUrl]);
 
-  // Intersection Observer: play video in view, pause others
+  // Only the active breakpoint owns playback; hidden elements never call play().
   useEffect(() => {
-    if (mediaType !== 'video') return;
-    const mobile = mobileVideoRef.current;
-    const desktop = desktopVideoRef.current;
-    if (!mobile && !desktop) return;
+    if (mediaType !== 'video' || !videoSrc) return;
+    const video = isMdUp ? desktopVideoRef.current : mobileVideoRef.current;
+    if (!video) return;
+    setPlaybackState('loading');
+    setVideoStarted(false);
+    const playback = createVideoPlayback(video, setPlaybackState);
+    retryPlayback.current = playback.retry;
     const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
-          const v = entry.target as HTMLVideoElement;
-          if (entry.isIntersecting) v.play().catch(() => {});
-          else v.pause();
-        });
+        playback.setVisible(entries.some((entry) => entry.isIntersecting));
       },
-      { threshold: 0.5 }
+      { threshold: 0 }
     );
-    if (mobile) observer.observe(mobile);
-    if (desktop) observer.observe(desktop);
-    return () => observer.disconnect();
-  }, [mediaType, videoSrc]);
+    observer.observe(video);
+    return () => {
+      observer.disconnect();
+      playback.dispose();
+      retryPlayback.current = null;
+    };
+  }, [mediaType, videoSrc, isMdUp]);
 
   // Calculate dynamic width based on aspect ratio
   // Desktop: height steps at 2xl (see desktop-rail-layout). Mobile: full-width, height = width/ar.
@@ -294,14 +299,16 @@ export function ProjectCard({
   const strokeColorDesktop =
     strokeDesktop === 'white' ? 'rgba(255, 255, 255, 0.127)' : 'rgba(0,0,0,0.04)';
 
-  /** Prefer first *painted* video frame so the handoff from poster matches what the user will see. */
+  /** Wait for a frame submitted to the compositor before uncovering the video. */
   const onVideoDecodedFrame = (e: SyntheticEvent<HTMLVideoElement>) => {
     const v = e.currentTarget;
     const rvfc = (
       v as HTMLVideoElement & { requestVideoFrameCallback?: (cb: () => void) => void }
     ).requestVideoFrameCallback;
     if (typeof rvfc === 'function') {
-      rvfc.call(v, () => setVideoStarted(true));
+      rvfc.call(v, () => {
+        if (v.isConnected && v.getAttribute('src')) setVideoStarted(true);
+      });
     } else {
       setVideoStarted(true);
     }
@@ -360,6 +367,16 @@ export function ProjectCard({
   const mobileImgReady = splitImageArt ? mobileImageReady : imageReady;
   const desktopImgReady = splitImageArt ? desktopImageReady : imageReady;
   const mobileImgSrc = imageUrlMobile ?? imageUrl;
+  const playbackFallback = (playbackState === 'play' || playbackState === 'retry') && (
+    <button
+      type="button"
+      aria-label={`${playbackState === 'play' ? 'Play' : 'Retry'} ${alt}`}
+      onClick={(event) => { event.stopPropagation(); retryPlayback.current?.(); }}
+      className="absolute bottom-4 left-1/2 z-[4] -translate-x-1/2 rounded-full bg-black/75 px-4 py-2 text-sm text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+    >
+      {playbackState === 'play' ? 'Play video' : 'Retry video'}
+    </button>
+  );
 
   return (
     <div ref={cardContainerRef} className="flex-shrink-0 w-full md:w-auto select-none" style={{ maxWidth: '100%' }}>
@@ -417,8 +434,8 @@ export function ProjectCard({
                 }
               }}
               onLoadedData={onVideoDecodedFrame}
+              onPlaying={onVideoDecodedFrame}
               className="absolute inset-0 z-[2] h-full w-full origin-center scale-[1.02] object-contain cursor-default opacity-100"
-              autoPlay
               loop
               muted
               playsInline
@@ -463,6 +480,7 @@ export function ProjectCard({
           <TVStaticCanvas width={mobileDisplayWidth} height={mobileDisplayHeight} className="absolute inset-0 w-full h-full object-cover" />
         )}
         {strokeOverlayMobile}
+        {mediaType === 'video' && !isMdUp && playbackFallback}
         </div>
       </div>
 
@@ -518,8 +536,8 @@ export function ProjectCard({
                 }
               }}
               onLoadedData={onVideoDecodedFrame}
+              onPlaying={onVideoDecodedFrame}
               className="absolute inset-0 z-[2] h-full w-full origin-center scale-[1.02] object-cover cursor-none opacity-100"
-              autoPlay
               loop
               muted
               playsInline
@@ -564,6 +582,7 @@ export function ProjectCard({
           <TVStaticCanvas width={desktopWidth} height={desktopHeight} className="absolute inset-0 w-full h-full" />
         )}
         {strokeOverlayDesktop}
+        {mediaType === 'video' && isMdUp && playbackFallback}
       </div>
     </div>
   );

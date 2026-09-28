@@ -2,7 +2,6 @@ import { useState, useEffect, useLayoutEffect, useRef, type ReactNode } from 're
 import { motion, AnimatePresence, animate } from 'motion/react';
 import { IntroNameHeading } from './components/intro-name-heading';
 import { WritingPage } from './components/writing-page';
-import { SignatureMotionDebugger } from './components/signature-motion-debugger';
 import { ProjectChip } from './components/project-chip';
 import { IntroCard } from './components/intro-card';
 import { ProjectCard } from './components/project-card';
@@ -374,10 +373,9 @@ function isDesktopSafariWebKit(): boolean {
 }
 
 /**
- * Background HTTP-cache warmup so project switches are instant. Light assets
- * (logos, video posters, images) for every project queue first, then the videos,
- * in rail order. Cards mark their own in-DOM fetches so nothing downloads twice,
- * and switching projects moves that project's pending URLs to the queue front.
+ * Background HTTP-cache warmup for project previews. Logos, posters and images
+ * queue in rail order; full videos load only through nearby cards. Switching
+ * projects moves that project's pending preview URLs to the queue front.
  */
 function projectPrefetchUrls(project: (typeof projectsWithMedia)[number]): {
   light: string[];
@@ -402,13 +400,13 @@ function projectPrefetchUrls(project: (typeof projectsWithMedia)[number]): {
 function useBackgroundMediaPrefetch(activeProject: string) {
   useEffect(() => {
     const light: string[] = [];
-    const heavy: string[] = [];
     for (const p of projectsWithMedia) {
       const u = projectPrefetchUrls(p);
       light.push(...u.light);
-      heavy.push(...u.heavy);
     }
-    queueMediaPrefetch([...light, ...heavy]);
+    // Warm static previews, not every project's full video files. Visible cards
+    // own video requests so unrelated downloads cannot compete with playback.
+    queueMediaPrefetch(light);
   }, []);
 
   const isFirstRun = useRef(true);
@@ -494,7 +492,17 @@ function initialSignatureMotionSettings(): SignatureMotionSettings {
 export default function App() {
   const [activeProject, setActiveProject] = useState('meta');
   const [siteView, setSiteView] = useState<SiteView>(siteViewFromLocation);
-  const [signatureMotionSettings, setSignatureMotionSettings] =
+  const [writingHeaderVisible, setWritingHeaderVisible] = useState(true);
+  const [writingLightboxProgress, setWritingLightboxProgress] = useState(0);
+  const writingLightboxVisible = writingLightboxProgress > 0.001;
+  useEffect(() => {
+    if (siteView === 'writing') {
+      setWritingHeaderVisible(true);
+    } else {
+      setWritingLightboxProgress(0);
+    }
+  }, [siteView]);
+  const [signatureMotionSettings] =
     useState<SignatureMotionSettings>(initialSignatureMotionSettings);
   // Also normalizes Fast Refresh state when the debugger schema gains a control.
   const resolvedSignatureMotionSettings = resolveSignatureMotionSettings(
@@ -591,7 +599,6 @@ export default function App() {
   const mobileStartX = useRef(0);
   const mobileScrollLeft = useRef(0);
   const currentOffset = useRef(0);
-  const signatureReplayTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!import.meta.env.DEV) return;
@@ -604,27 +611,6 @@ export default function App() {
       /* Dev convenience only; animation still works when storage is unavailable. */
     }
   }, [signatureMotionSettings]);
-
-  const replaySignatureMotion = () => {
-    if (signatureReplayTimeoutRef.current !== null) {
-      window.clearTimeout(signatureReplayTimeoutRef.current);
-    }
-    setSiteView('work');
-    signatureReplayTimeoutRef.current = window.setTimeout(() => {
-      setSiteView('writing');
-      const writingPath = `${import.meta.env.BASE_URL}writing`;
-      window.history.replaceState({ siteView: 'writing' }, '', writingPath);
-      signatureReplayTimeoutRef.current = null;
-    }, 800);
-  };
-
-  useEffect(() => {
-    return () => {
-      if (signatureReplayTimeoutRef.current !== null) {
-        window.clearTimeout(signatureReplayTimeoutRef.current);
-      }
-    };
-  }, []);
 
   const navigateToView = (nextView: SiteView) => {
     setSiteView(nextView);
@@ -1442,29 +1428,50 @@ export default function App() {
 
   return (
     <div className="bg-white h-full min-h-0 md:h-full md:min-h-0 md:max-h-full md:overflow-hidden">
-      {/* Custom Cursor - Desktop only */}
+      {/*
+       * One top-level cursor serves both the app shell and Writing. The embedded
+       * article forwards pointer coordinates instead of drawing a second cursor.
+       */}
       <div className="hidden md:block">
         <CustomCursor isPressed={isPressed} />
       </div>
-
-      {import.meta.env.DEV && (
-        <SignatureMotionDebugger
-          settings={resolvedSignatureMotionSettings}
-          isMobile={isMobile}
-          onChange={setSignatureMotionSettings}
-          onReset={() => setSignatureMotionSettings(DEFAULT_SIGNATURE_MOTION)}
-          onReplay={replaySignatureMotion}
-        />
-      )}
 
       {/* Desktop Layout */}
       <div className="hidden md:block md:h-full md:min-h-0">
         <div
           ref={desktopShellRef}
-          className="px-[17.5px] lg:px-[24.5px] xl:px-[31.5px] pt-[14px] lg:pt-[20px] xl:pt-[33px] 2xl:pt-[46px] pb-[60px] lg:pb-[80px] h-full min-h-0 max-h-full overflow-y-hidden"
+          className="relative flex h-full min-h-0 max-h-full flex-col overflow-y-hidden px-[17.5px] pb-[60px] pt-[14px] lg:px-[24.5px] lg:pb-[80px] lg:pt-[20px] xl:px-[31.5px] xl:pt-[33px] 2xl:pt-[46px]"
         >
           {/* Header — tighter top inset + type for laptop (~md–xl); large desktop unchanged feel at 2xl. */}
-          <div ref={desktopHeaderBlockRef} className="mb-[16px] lg:mb-[20px]">
+          <motion.div
+            ref={desktopHeaderBlockRef}
+            data-writing-header="desktop"
+            animate={{
+              y: siteView === 'writing' && !writingHeaderVisible ? -160 : 0,
+              scale: 1 - 0.04 * writingLightboxProgress,
+              filter: `blur(${16 * writingLightboxProgress}px) saturate(${100 + 40 * writingLightboxProgress}%) brightness(${100 - 18 * writingLightboxProgress}%)`,
+              backgroundColor: writingLightboxVisible
+                ? `rgba(0,0,0,${0.1 * writingLightboxProgress})`
+                : '#fff',
+            }}
+            transition={{
+              y: { duration: 0.22, ease: [0.23, 1, 0.32, 1] },
+              scale: { duration: 0 },
+              filter: { duration: 0 },
+              backgroundColor: { duration: 0 },
+            }}
+            className="relative z-20 shrink-0 pb-[16px] lg:pb-[20px]"
+            style={{
+              pointerEvents: writingLightboxVisible ? 'none' : undefined,
+              transformOrigin: 'center top',
+              boxShadow:
+                siteView === 'writing' && writingLightboxVisible
+                  ? 'none'
+                  : siteView === 'writing'
+                    ? '0 -48px 0 0 #fff, inset 0 -1px 0 rgba(0,0,0,0.03)'
+                  : '0 -48px 0 0 #fff',
+            }}
+          >
             <div className="font-['Alliance_No.1',sans-serif] font-light leading-[normal] not-italic text-[20px] lg:text-[25px] xl:text-[30px] text-[#121111] tracking-[-1px] lg:tracking-[-1.21px] xl:tracking-[-1.46px] mb-[16px] lg:mb-[20px]">
               <IntroNameHeading
                 variant="desktop"
@@ -1499,8 +1506,9 @@ export default function App() {
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
+          </motion.div>
 
+          <div className={siteView === 'writing' ? 'absolute inset-0 min-h-0' : ''}>
           <AnimatePresence initial={false} mode="wait">
             {siteView === 'work' ? (
               <motion.div
@@ -1535,11 +1543,17 @@ export default function App() {
                 animate={{ opacity: 1, filter: 'blur(0px)' }}
                 exit={{ opacity: 0, filter: 'blur(8px)' }}
                 transition={{ duration: 0.24, ease: [0.23, 1, 0.32, 1] }}
+                className="h-full min-h-0"
               >
-                <WritingPage variant="desktop" />
+                <WritingPage
+                  variant="desktop"
+                  onHeaderVisibilityChange={setWritingHeaderVisible}
+                  onLightboxProgressChange={setWritingLightboxProgress}
+                />
               </motion.div>
             )}
           </AnimatePresence>
+          </div>
         </div>
       </div>
 
@@ -1547,13 +1561,21 @@ export default function App() {
       <div className="md:hidden flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden bg-white pt-[env(safe-area-inset-top,0px)]">
         <div
           ref={mobileScrollContainerRef}
-          className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-behavior-y-contain"
+          className={`flex min-h-0 flex-1 flex-col overscroll-behavior-y-contain ${
+            siteView === 'writing' ? 'overflow-y-hidden' : 'overflow-y-auto'
+          }`}
           style={{
             WebkitOverflowScrolling: 'touch',
             touchAction: 'pan-y',
           }}
         >
-          <div className="touch-pan-y min-w-0 w-full max-w-full px-[24px] pb-[60px] pt-[36px]">
+          <div
+            className={`relative touch-pan-y min-w-0 w-full max-w-full px-[24px] ${
+              siteView === 'writing'
+                ? 'flex h-full min-h-0 flex-col pb-0 pt-[16px]'
+                : 'pb-[60px] pt-[36px]'
+            }`}
+          >
           <motion.div
             className="contents"
             variants={MOBILE_SHELL_STAGGER_PARENT}
@@ -1563,17 +1585,50 @@ export default function App() {
           {/* Intro scrolls away inside the main scroll region (no scroll-linked fade or scale). */}
           <motion.div
             ref={mobileIntroRef}
-            variants={MOBILE_SHELL_STAGGER_CHILD}
-            className="font-['Alliance_No.1',sans-serif] font-light leading-[1.08] not-italic text-[22px] text-[#121111] tracking-[-0.99px] mb-[28px]"
+            data-writing-header="mobile"
+            animate={{
+              y: siteView === 'writing' && !writingHeaderVisible ? -120 : 0,
+              scale: 1 - 0.04 * writingLightboxProgress,
+              filter: `blur(${16 * writingLightboxProgress}px) saturate(${100 + 40 * writingLightboxProgress}%) brightness(${100 - 18 * writingLightboxProgress}%)`,
+              backgroundColor: writingLightboxVisible
+                ? `rgba(0,0,0,${0.1 * writingLightboxProgress})`
+                : '#fff',
+            }}
+            transition={{
+              y: { duration: 0.22, ease: [0.23, 1, 0.32, 1] },
+              scale: { duration: 0 },
+              filter: { duration: 0 },
+              backgroundColor: { duration: 0 },
+            }}
+            className={
+              siteView === 'writing'
+                ? 'absolute left-0 right-0 top-[16px] z-20 shrink-0 bg-white px-[24px] pb-[12px]'
+                : 'relative z-20 shrink-0 pb-[28px]'
+            }
+            style={{
+              pointerEvents: writingLightboxVisible ? 'none' : undefined,
+              transformOrigin: 'center top',
+              boxShadow:
+                siteView === 'writing' && writingLightboxVisible
+                  ? 'none'
+                  : siteView === 'writing'
+                    ? '0 -48px 0 0 #fff, inset 0 -1px 0 rgba(0,0,0,0.03)'
+                  : '0 -48px 0 0 #fff',
+            }}
           >
-            <IntroNameHeading
-              variant="mobile"
-              view={siteView}
-              onSignatureClick={handleSignatureClick}
-              onWritingClick={() => navigateToView('writing')}
-              onWorkClick={() => navigateToView('work')}
-              motionSettings={resolvedSignatureMotionSettings}
-            />
+            <motion.div
+              variants={MOBILE_SHELL_STAGGER_CHILD}
+              className="font-['Alliance_No.1',sans-serif] text-[22px] font-light leading-[1.08] not-italic tracking-[-0.99px] text-[#121111]"
+            >
+              <IntroNameHeading
+                variant="mobile"
+                view={siteView}
+                onSignatureClick={handleSignatureClick}
+                onWritingClick={() => navigateToView('writing')}
+                onWorkClick={() => navigateToView('work')}
+                motionSettings={resolvedSignatureMotionSettings}
+              />
+            </motion.div>
           </motion.div>
 
           <AnimatePresence initial={false} mode="wait">
@@ -1589,6 +1644,7 @@ export default function App() {
                 <motion.div
                   ref={mobileChipRailRef}
                   variants={MOBILE_SHELL_STAGGER_CHILD}
+                  animate={mobileShellRevealCompleteRef.current ? 'visible' : undefined}
                   className="sticky z-10 -mx-[24px] bg-white px-[24px]"
                   style={{
                     top: 0,
@@ -1641,7 +1697,10 @@ export default function App() {
                 </motion.div>
 
                 {/* Vertical Stack of Cards */}
-                <motion.div variants={MOBILE_SHELL_STAGGER_CHILD}>
+                <motion.div
+                  variants={MOBILE_SHELL_STAGGER_CHILD}
+                  animate={mobileShellRevealCompleteRef.current ? 'visible' : undefined}
+                >
                   <AnimatePresence mode="wait" onExitComplete={handleMobileContentExitComplete}>
                     <motion.div
                       ref={mobileStackRef}
@@ -1680,8 +1739,17 @@ export default function App() {
                 animate={{ opacity: 1, filter: 'blur(0px)' }}
                 exit={{ opacity: 0, filter: 'blur(8px)' }}
                 transition={{ duration: 0.24, ease: [0.23, 1, 0.32, 1] }}
+                className={
+                  writingLightboxVisible
+                    ? 'absolute inset-0 z-10 min-h-0'
+                    : 'relative -mx-[24px] min-h-0 flex-1'
+                }
               >
-                <WritingPage variant="mobile" />
+                <WritingPage
+                  variant="mobile"
+                  onHeaderVisibilityChange={setWritingHeaderVisible}
+                  onLightboxProgressChange={setWritingLightboxProgress}
+                />
               </motion.div>
             )}
           </AnimatePresence>

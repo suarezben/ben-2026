@@ -5,7 +5,12 @@ import { waitForWebFonts } from "./wait-for-webfonts";
 
 const rootEl = document.getElementById("root");
 if (import.meta.env.DEV && new URLSearchParams(location.search).has('mediaDebug')) {
-  void import('../scripts/diagnostics/media-timeline.js');
+  const mode = new URLSearchParams(location.search).get('mediaDebug');
+  if (mode === 'reads' || mode === 'events') {
+    void import('../scripts/diagnostics/media-isolation.js');
+  } else {
+    void import('../scripts/diagnostics/media-timeline.js');
+  }
 }
 if (!rootEl) {
   throw new Error("Missing #root");

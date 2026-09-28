@@ -98,6 +98,7 @@ function prefetchViaFetch(url: string): Promise<boolean> {
   };
   return fetch(url, { priority: 'low', signal: controller.signal } as RequestInit)
     .then((r) => {
+      if (!r.ok) throw new Error(`Media prefetch failed: ${r.status}`);
       // Drain so the body actually lands in the HTTP cache.
       return r.arrayBuffer().then(() => true);
     })

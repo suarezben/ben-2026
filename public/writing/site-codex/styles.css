@@ -73,6 +73,21 @@ body {
 }
 img, video { display: block; }
 
+/* Explicitly suppress both scrollbar tracks while transformed lightbox slides
+   are mounted. WebKit can otherwise expose the wide carousel body's horizontal
+   track even though the fixed modal itself clips correctly. */
+html.lightbox-scroll-lock,
+html.lightbox-scroll-lock body {
+  overflow: hidden !important;
+  scrollbar-width: none;
+}
+html.lightbox-scroll-lock::-webkit-scrollbar,
+html.lightbox-scroll-lock body::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 ::selection {
   background: rgba(176, 114, 220, 0.3);
   color: #141414;
@@ -139,6 +154,21 @@ img, video { display: block; }
   gap: var(--block-gap);
 }
 .column > * { width: 100%; }
+
+/* The portfolio shell owns the space above an embedded article. Set this
+   before first paint so mobile never renders behind the host header and then
+   jumps when React finishes measuring it. */
+html[data-embedded="mobile"] .column { padding-top: 24px; }
+html[data-embedded="desktop"] .column { padding-top: 153px; }
+@media (min-width: 1024px) {
+  html[data-embedded="desktop"] .column { padding-top: 179px; }
+}
+@media (min-width: 1280px) {
+  html[data-embedded="desktop"] .column { padding-top: 207px; }
+}
+@media (min-width: 1536px) {
+  html[data-embedded="desktop"] .column { padding-top: 220px; }
+}
 
 /* ------------------------------------------------------------------
    Type
@@ -394,7 +424,11 @@ figcaption {
 /* ------------------------------------------------------------------
    Lightbox
 ------------------------------------------------------------------ */
-.lb { position: fixed; inset: 0; z-index: 100; }
+.lb {
+  position: fixed; inset: 0; z-index: 100;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
 .lb:focus { outline: none; }
 .lb[hidden] { display: none; }
 /* Safari does not reliably derive browser-chrome color from a backdrop-filter.
@@ -433,7 +467,12 @@ figcaption {
      Safari's browser-owned regions cannot be covered by overscanning this layer. */
   will-change: background, backdrop-filter;
 }
-.lb-stage { position: absolute; inset: 0; touch-action: none; }
+.lb-stage {
+  position: absolute; inset: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+}
 .lb-slide {
   position: absolute; left: 0; top: 0;
   will-change: transform, width, height;
@@ -443,14 +482,14 @@ figcaption {
 .lb-placeholder { flex: 0 0 auto; }
 .media-row > .lb-placeholder { flex: 1 1 0; min-width: 0; }
 .lb-close, .lb-download {
-  position: absolute; top: 20px; right: 20px;
+  position: absolute; top: 64px; right: 64px;
   width: 40px; height: 40px; border-radius: 50%;
   border: 0; background: rgba(255,255,255,0.18); color: #fff;
   backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   display: grid; place-items: center; cursor: pointer;
   opacity: 0; transition: opacity 400ms cubic-bezier(0.2, 0.85, 0.2, 1);
 }
-.lb-download { right: 64px; }
+.lb-download { right: 108px; }
 .lb-download svg { opacity: .5; }
 .lb.is-open .lb-close, .lb.is-open .lb-download { opacity: 1; }
 .lb-download:disabled { opacity: .25; cursor: default; }
@@ -489,9 +528,9 @@ figcaption {
   .media-row > .lb-placeholder { flex: 0 0 86% !important; scroll-snap-align: center; }
 
   .phone { width: 150px; }
-  .lb-close, .lb-download { top: max(12px, env(safe-area-inset-top)); }
-  .lb-close { right: 12px; }
-  .lb-download { right: 56px; }
+  .lb-close, .lb-download { top: max(20px, env(safe-area-inset-top)); }
+  .lb-close { right: 20px; }
+  .lb-download { right: 64px; }
 }
 
 /* ------------------------------------------------------------------
@@ -712,6 +751,21 @@ figcaption {
 }
 @media (prefers-reduced-motion: reduce) {
   .lb-close, .lb-download, .lb-counter { transition: none; }
+}
+
+/* Embedded hero sizing follows the host shell, not the iframe's overscanned
+   viewport. This preserves a real gutter through the mobile/desktop breakpoint
+   and keeps the hero fully underneath the white header surface when it returns. */
+html[data-embedded="mobile"] .media-block--hero {
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+}
+html[data-embedded="mobile"] .media--hero {
+  width: min(600px, calc(100vw - 48px));
+}
+html[data-embedded="desktop"] .media--hero {
+  width: min(900px, calc(100vw - 118px));
 }
 .media-inner--acrylic { display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 20px; padding: 30px 40px; }
 .acrylic-screen { width: 69.428px; height: 141.536px; position: relative; }

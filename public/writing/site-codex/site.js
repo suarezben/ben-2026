@@ -7,7 +7,7 @@ const CONFIG = {
   dragRevealDistance: .5, dragMaxReduction: .85,
   lightboxDismissMinStride: .75,
   lightboxSiblingDelay: .03,
-  margin: 24, carouselSpeed: 49, momentumTau: .9,
+  margin: 64, carouselSpeed: 49, momentumTau: .9,
   carouselPauseTau: .14, carouselResumeTau: .52, carouselLandingHold: .12,
   carouselFadeFalloff: 150, carouselFadeIntensity: .82,
   carouselFadeMode: 'items', carouselItemDropoff: 760,
@@ -251,7 +251,7 @@ const lightbox = (() => {
     return clamp(distance/(vh*CONFIG.dragRevealDistance),0,CONFIG.dragMaxReduction);
   }
   function fittedSize(slide, dismissDistance) {
-    const margin = innerWidth < 600 ? 16 : CONFIG.margin;
+    const margin = innerWidth < 600 ? 24 : CONFIG.margin;
     const maxW = vw-2*margin;
     const viewportMaxH = vh-2*margin-56;
     const isTallMedia = slide.origin.h/slide.origin.w >= 1.6;
@@ -298,6 +298,7 @@ const lightbox = (() => {
     // at one pixel of blur before media motion starts so the visible spring does
     // not outrun Safari's compositor setup.
     const materialProgress = Math.max(p,state==='priming'?CONFIG.materialWarmup:0);
+    document.dispatchEvent(new CustomEvent('lightboxprogress',{detail:{progress:p}}));
     background.style.transform = `scale(${scale})`;
     const useMaterial = supportsBackdropFilter && !reducedTransparency.matches;
     const dim = useMaterial ? CONFIG.backdropDim : Math.max(CONFIG.backdropDim,.72);
@@ -386,6 +387,7 @@ const lightbox = (() => {
     html.style.overscrollBehavior='none';
     body.style.overflow='hidden';
     body.style.overscrollBehavior='none';
+    html.classList.add('lightbox-scroll-lock');
   }
   function unlockPageScroll() {
     if(!scrollLockStyles) return;
@@ -395,6 +397,7 @@ const lightbox = (() => {
     body.style.overflow=scrollLockStyles.bodyOverflow;
     body.style.overscrollBehavior=scrollLockStyles.bodyOverscrollBehavior;
     body.style.paddingRight=scrollLockStyles.bodyPaddingRight;
+    html.classList.remove('lightbox-scroll-lock');
     scrollLockStyles=null;
   }
   function open(el) {
@@ -642,7 +645,7 @@ function setupLightboxTuner() {
     backdropColor:'#000000', backdropDim:.10, blur:16,
     saturation:140, brightness:82,
     dragRevealDistance:.5, dragMaxReduction:.85,
-    pageScale:.96, response:.48, damping:.88, margin:24,
+    pageScale:.96, response:.48, damping:.88, margin:64,
   };
   let stored={};
   try { stored=JSON.parse(localStorage.getItem('lightbox-tuning')||'{}'); } catch {}
