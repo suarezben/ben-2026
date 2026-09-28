@@ -4,6 +4,7 @@ import { IntroCard } from './intro-card';
 import { ProjectCard } from './project-card';
 import { SutterHillLogoGrid } from './sutter-hill-logo-grid';
 import { carouselFlexGapPx, carouselRowJustifyContent } from '../lib/carousel-flex-gap';
+import { renderPresenceFade } from '../lib/presence-fade';
 
 type Intro = ComponentProps<typeof IntroCard>;
 type Card = ComponentProps<typeof ProjectCard>;
@@ -57,9 +58,12 @@ export function DesktopCarouselRail({
         <AnimatePresence mode="wait" onExitComplete={onExitComplete}>
           <motion.div
             key={activeProject}
+            onUpdate={renderPresenceFade}
             initial={{ opacity: 0 }}
             style={{
               x: rubberBandOffset,
+              // Keep the fading video group composited when opacity reaches 1.
+              willChange: 'opacity, transform',
             }}
             animate={{
               opacity: 1,

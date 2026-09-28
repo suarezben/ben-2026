@@ -1,6 +1,35 @@
 # Project-switch flicker investigation — September 24, 2026
 
-Status: cause not confirmed. No visual fix applied.
+Original September 24 status: cause not confirmed. See the September 28 follow-up below.
+
+## September 28: recorded exit flash and local fix
+
+- Recorded the native Chrome site window at 60 fps, on plain localhost URLs
+  without `mediaDebug`. Before: Work faded to white, then returned at full
+  opacity for a frame immediately before Writing entered. Both the text/chips
+  and media flashed, ruling out video-poster readiness as the sole cause.
+- The installed `motion-dom` 12.34.3 native animation completion calls
+  `updateMotionValue(final)` (which queues a render), then cancels the WAAPI
+  effect. The underlying old inline opacity can become visible before that
+  queued render. A narrow `onUpdate` subscriber (`renderPresenceFade`) selects
+  Motion's JS renderer for the route/project presence fades, keeping final
+  opacity and completion on the same rendering path. No layout-read loop or
+  global animation-engine override was added; the CSS logo motion is unchanged.
+- A second captured issue was independent of opacity: the shared desktop page
+  wrapper changed between normal-flow and absolute positioning on navigation.
+  Writing collapsed to a thin strip during its exit. Absolute positioning now
+  belongs to the keyed Writing page, so it remains valid through its exit.
+- After: inspected 60-fps frame sequences for fresh-load Work → Writing,
+  Writing → Work, Fellow → Twitter, and Twitter → Periscope. No full-opacity
+  return flash was present; the article retained its geometry on exit. Also
+  inspected the Meta → Fellow fade at 30 fps and verified mobile navigation
+  and layout in the integrated browser at 375×812 (not a physical-phone recording).
+- `npm run build` and `git diff --check` passed. These checks do not establish
+  behavior in every Chromium version/GPU or on the user's physical phone.
+- Local source recordings: `/tmp/chrome-flicker-before.mov`,
+  `/tmp/chrome-flicker-after.mov`, `/tmp/chrome-flicker-final.mov`. A quarter-speed
+  side-by-side excerpt (before left, after right) is saved in the task's
+  visualization directory as `flicker-before-after-slow.mp4`.
 
 ## Evidence
 

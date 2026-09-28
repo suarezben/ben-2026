@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import {
   DEFAULT_SIGNATURE_MOTION,
   type SignatureMotionSettings,
@@ -30,6 +30,11 @@ const BLUR_SWAP_TRANSITION = {
   ease: [0.23, 1, 0.32, 1] as [number, number, number, number],
 };
 
+const SIGNATURE_TRAVEL_DURATION_MS = 420;
+const SIGNATURE_RETURN_DURATION_MS = 380;
+const SIGNATURE_TRAVEL_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
+const SIGNATURE_ANTICIPATION_EASE = 'cubic-bezier(0.45, 0, 0.55, 1)';
+
 type SignaturePhase =
   | 'work'
   | 'waiting-in'
@@ -47,12 +52,34 @@ export function IntroNameHeading({
 }: IntroNameHeadingProps) {
   const isMobile = variant === 'mobile';
   const isWriting = view === 'writing';
+  const shouldReduceMotion = useReducedMotion();
   const locationLabel = isMobile ? 'SF' : 'San Francisco';
   const [signaturePhase, setSignaturePhase] = useState<SignaturePhase>(() =>
     isWriting ? 'writing' : 'work'
   );
   const [showIntroText, setShowIntroText] = useState(() => !isWriting);
   const signaturePhaseInitializedRef = useRef(false);
+  const introTextRef = useRef<HTMLSpanElement>(null);
+  const [introTextOffset, setIntroTextOffset] = useState(0);
+
+  useLayoutEffect(() => {
+    const introText = introTextRef.current;
+    if (!introText) return;
+
+    const measureIntroText = () => {
+      const marginRight = Number.parseFloat(
+        window.getComputedStyle(introText).marginRight
+      ) || 0;
+      setIntroTextOffset(introText.getBoundingClientRect().width + marginRight);
+    };
+
+    measureIntroText();
+    const resizeObserver = new ResizeObserver(measureIntroText);
+    resizeObserver.observe(introText);
+    document.fonts?.ready.then(measureIntroText).catch(() => {});
+
+    return () => resizeObserver.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!signaturePhaseInitializedRef.current) {
@@ -63,17 +90,26 @@ export function IntroNameHeading({
     }
 
     const timers: number[] = [];
+    const animationFrames: number[] = [];
     if (isWriting) {
       setShowIntroText(false);
       setSignaturePhase('waiting-in');
       const delayMs = Math.max(0, motionSettings.inDelayMs);
       const anticipationMs = Math.max(0, motionSettings.anticipationMs);
       timers.push(
-        window.setTimeout(() => setSignaturePhase('anticipating-in'), delayMs),
-        window.setTimeout(
-          () => setSignaturePhase('writing'),
-          delayMs + anticipationMs
-        )
+        window.setTimeout(() => {
+          setSignaturePhase('anticipating-in');
+          animationFrames.push(
+            window.requestAnimationFrame(() => {
+              timers.push(
+                window.setTimeout(
+                  () => setSignaturePhase('writing'),
+                  anticipationMs
+                )
+              );
+            })
+          );
+        }, delayMs)
       );
     } else {
       // The signature starts immediately. Only the returning intro copy waits.
@@ -84,54 +120,63 @@ export function IntroNameHeading({
         : 0;
       const anticipationMs = Math.max(0, motionSettings.outAnticipationMs);
       timers.push(
-        window.setTimeout(() => setShowIntroText(true), textDelayMs),
-        window.setTimeout(() => setSignaturePhase('work'), anticipationMs)
+        window.setTimeout(() => setShowIntroText(true), textDelayMs)
+      );
+      animationFrames.push(
+        window.requestAnimationFrame(() => {
+          timers.push(
+            window.setTimeout(() => setSignaturePhase('work'), anticipationMs)
+          );
+        })
       );
     }
 
-    return () => timers.forEach((timer) => window.clearTimeout(timer));
+    return () => {
+      timers.forEach((timer) => window.clearTimeout(timer));
+      animationFrames.forEach((frame) => window.cancelAnimationFrame(frame));
+    };
     // Settings are intentionally sampled when the view changes; use Replay after tuning.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isWriting]);
 
-  const inSpring = {
-    type: 'spring' as const,
-    stiffness: motionSettings.inStiffness,
-    damping: motionSettings.inDamping,
-    mass: motionSettings.inMass,
-  };
-  const outSpring = {
-    type: 'spring' as const,
-    stiffness: motionSettings.outStiffness,
-    damping: motionSettings.outDamping,
-    mass: motionSettings.outMass,
-  };
-  const signatureSpring = isWriting ? inSpring : outSpring;
   const signatureKeepsWritingLayout =
     signaturePhase === 'writing' ||
     signaturePhase === 'anticipating-out';
-  // Visibility and layout are intentionally separate. On the way into Writing,
-  // the copy disappears immediately but keeps its width through the wind-up so
-  // the signature can anticipate to the right before its leftward spring begins.
-  const introTextOccupiesLayout = isWriting
-    ? signaturePhase !== 'writing'
-    : showIntroText;
-  const writingY = isMobile ? motionSettings.mobileY - 16 : motionSettings.desktopY;
+  // Center the mobile signature between the Work and Contact text rows.
+  // Keep the stable header geometry and existing transform animation unchanged.
+  const writingY = isMobile ? motionSettings.mobileY + 7 : motionSettings.desktopY;
   const writingScale = isMobile
     ? motionSettings.mobileScale
     : motionSettings.desktopScale;
+  // Keep the intro copy's layout footprint stable and move the signature entirely
+  // with transforms. Collapsing the copy while translating the signature made the
+  // two animations fight each other and read as a jump in WebKit.
+  const writingX = SIGNATURE_LAYER_OFFSET - introTextOffset;
   const signatureMotionTarget =
     signaturePhase === 'anticipating-in'
       ? { x: motionSettings.anticipationPx + SIGNATURE_LAYER_OFFSET, y: 0, scale: 1 }
       : signaturePhase === 'anticipating-out'
         ? {
-            x: -motionSettings.outAnticipationPx + SIGNATURE_LAYER_OFFSET,
+            x: writingX - motionSettings.outAnticipationPx,
             y: writingY,
             scale: writingScale,
           }
         : signatureKeepsWritingLayout
-          ? { x: SIGNATURE_LAYER_OFFSET, y: writingY, scale: writingScale }
+          ? { x: writingX, y: writingY, scale: writingScale }
           : { x: SIGNATURE_LAYER_OFFSET, y: 0, scale: 1 };
+  const signatureTransition = shouldReduceMotion
+    ? 'none'
+    : signaturePhase === 'waiting-in'
+      ? 'none'
+      : signaturePhase === 'anticipating-in'
+        ? `transform ${Math.max(1, motionSettings.anticipationMs)}ms ${SIGNATURE_ANTICIPATION_EASE}`
+        : signaturePhase === 'anticipating-out'
+          ? `transform ${Math.max(1, motionSettings.outAnticipationMs)}ms ${SIGNATURE_ANTICIPATION_EASE}`
+          : `transform ${
+              signaturePhase === 'writing'
+                ? SIGNATURE_TRAVEL_DURATION_MS
+                : SIGNATURE_RETURN_DURATION_MS
+            }ms ${SIGNATURE_TRAVEL_EASE}`;
 
   const signatureClass = isMobile
     ? 'block h-6 w-[122px] shrink-0 bg-site-ink'
@@ -142,57 +187,51 @@ export function IntroNameHeading({
       className={
         isMobile
           ? isWriting
-            ? 'relative flex h-[72px] items-center justify-between gap-0'
-            : 'flex items-center justify-between gap-0'
+            ? 'relative flex h-[52px] items-start justify-between gap-0'
+            : 'relative flex h-[104px] items-start justify-between gap-0'
           : 'flex items-center justify-between gap-4'
       }
     >
       <motion.div
         className={
           isMobile
-            ? isWriting
-              ? 'flex h-full min-w-0 flex-1 items-center'
-              : 'h-[104px] min-w-0 flex-1'
+            ? 'h-[104px] min-w-0 flex-1 pr-[92px]'
             : 'h-[52px] min-w-0 flex-1 lg:h-[64px] xl:h-[79px]'
         }
       >
         <p
           className={
             isMobile
-              ? 'm-0 flex flex-wrap items-end gap-y-1 leading-[normal]'
+              ? 'm-0 flex flex-nowrap items-end leading-[normal]'
               : 'mb-0 flex flex-wrap items-end gap-y-1 leading-[normal]'
           }
         >
           <motion.span
+            ref={introTextRef}
             initial={false}
             aria-hidden={!showIntroText}
             animate={{
-              maxWidth: introTextOccupiesLayout ? '6em' : '0em',
-              marginRight: introTextOccupiesLayout ? '0.25em' : '0em',
               opacity: showIntroText ? 1 : 0,
               filter: showIntroText ? 'blur(0px)' : 'blur(7px)',
             }}
             transition={{
-              maxWidth: signatureSpring,
-              marginRight: signatureSpring,
               opacity: BLUR_SWAP_TRANSITION,
               filter: BLUR_SWAP_TRANSITION,
             }}
-            className="inline-block shrink-0 overflow-hidden whitespace-nowrap"
+            className="mr-[0.25em] inline-block shrink-0 whitespace-nowrap"
           >
             My name is
           </motion.span>
 
-          <motion.button
+          <button
             type="button"
             onClick={onSignatureClick}
             aria-label={isWriting ? 'Back to work' : 'Open first project: Meta Reality Labs'}
-            initial={false}
-            animate={signatureMotionTarget}
-            transition={{
-              x: signatureSpring,
-              y: signatureSpring,
-              scale: signatureSpring,
+            style={{
+              transform: `translate3d(${signatureMotionTarget.x}px, ${signatureMotionTarget.y}px, 0) scale(${signatureMotionTarget.scale})`,
+              transformOrigin: 'left center',
+              transition: signatureTransition,
+              willChange: shouldReduceMotion ? undefined : 'transform',
             }}
             className="-ml-px shrink-0 border-0 bg-transparent p-0 text-left focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-site-ink/35 focus-visible:ring-offset-2"
           >
@@ -210,7 +249,7 @@ export function IntroNameHeading({
                 maskSize: 'contain',
               }}
             />
-          </motion.button>
+          </button>
         </p>
 
         <AnimatePresence initial={false} mode="sync">
@@ -237,9 +276,7 @@ export function IntroNameHeading({
         aria-label="Primary"
         className={
           isMobile
-            ? isWriting
-              ? 'absolute right-0 top-[-22px] flex w-[92px] shrink-0 flex-col items-end justify-center gap-3 text-[22px] font-light leading-[1.08] tracking-[-0.99px] text-site-ink/70'
-              : 'flex w-[92px] -translate-y-[22px] shrink-0 flex-col items-end justify-center gap-3 text-[22px] font-light leading-[1.08] tracking-[-0.99px] text-site-ink/70'
+            ? 'absolute right-0 top-[-20px] flex w-[92px] shrink-0 flex-col items-end justify-center gap-3 text-[22px] font-light leading-[1.08] tracking-[-0.99px] text-site-ink/70'
             : 'ml-6 flex shrink-0 items-center gap-[1.35em] text-[16px] text-site-ink/70 lg:text-[20px] xl:text-[24px]'
         }
       >

@@ -18,6 +18,7 @@ import projectMedia from '@/content/project-media.json';
 import projectLogos from '@/content/project-logos.json';
 import { queueMediaPrefetch, prioritizeMediaPrefetch } from './lib/prefetch-media';
 import { LYFT_DESKTOP_RAIL_WIDTH_SCALE } from './lib/desktop-rail-layout';
+import { renderPresenceFade } from './lib/presence-fade';
 import {
   DEFAULT_SIGNATURE_MOTION,
   LEGACY_SIGNATURE_MOTION_STORAGE_KEY,
@@ -1511,6 +1512,7 @@ export default function App() {
               {siteView === 'work' && (
                 <motion.div
                   key="desktop-project-chips"
+                  onUpdate={renderPresenceFade}
                   layout
                   initial={{ opacity: 0, filter: 'blur(8px)' }}
                   animate={{ opacity: 1, filter: 'blur(0px)' }}
@@ -1531,20 +1533,16 @@ export default function App() {
             </AnimatePresence>
           </motion.div>
 
-          <div
-            className={
-              siteView === 'writing'
-                ? `absolute inset-0 min-h-0 ${writingLightboxVisible ? 'z-30' : 'z-0'}`
-                : ''
-            }
-          >
+          <div>
           <AnimatePresence initial={false} mode="wait">
             {siteView === 'work' ? (
               <motion.div
                 key="desktop-work"
-                initial={{ opacity: 0, filter: 'blur(8px)' }}
-                animate={{ opacity: 1, filter: 'blur(0px)' }}
-                exit={{ opacity: 0, filter: 'blur(8px)' }}
+                onUpdate={renderPresenceFade}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                style={{ willChange: 'opacity' }}
                 transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
               >
                 {/* Horizontal Scrolling Projects — markup lives in `desktop-carousel-rail.tsx` so JSX can’t break the whole app. */}
@@ -1568,11 +1566,16 @@ export default function App() {
             ) : (
               <motion.div
                 key="desktop-writing"
-                initial={{ opacity: 0, filter: 'blur(10px)' }}
-                animate={{ opacity: 1, filter: 'blur(0px)' }}
-                exit={{ opacity: 0, filter: 'blur(8px)' }}
+                onUpdate={renderPresenceFade}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                style={{ willChange: 'opacity' }}
                 transition={{ duration: 0.24, ease: [0.23, 1, 0.32, 1] }}
-                className="h-full min-h-0"
+                // Position the keyed page itself so its geometry survives its exit.
+                // Changing the shared parent on navigation clipped Writing and
+                // moved Work before either outgoing fade had finished.
+                className={`absolute inset-0 h-full min-h-0 ${writingLightboxVisible ? 'z-30' : 'z-0'}`}
               >
                 {!isMobile && (
                   <WritingPage
@@ -1634,7 +1637,7 @@ export default function App() {
             }}
             className={
                 siteView === 'writing'
-                ? `absolute left-0 right-0 top-[16px] shrink-0 bg-white px-[24px] pb-[12px] ${
+                ? `absolute left-0 right-0 top-[36px] shrink-0 bg-white px-[24px] pb-[12px] ${
                     writingLightboxVisible ? 'z-40' : 'z-20'
                   }`
                 : 'relative z-20 shrink-0 pb-[28px]'
@@ -1668,13 +1671,14 @@ export default function App() {
             </motion.div>
           </motion.div>
 
-          <AnimatePresence initial={false} mode="wait">
+          <AnimatePresence initial={false} mode="sync">
             {siteView === 'work' ? (
               <motion.div
                 key="mobile-work"
-                initial={{ opacity: 0, filter: 'blur(8px)' }}
-                animate={{ opacity: 1, filter: 'blur(0px)' }}
-                exit={{ opacity: 0, filter: 'blur(8px)' }}
+                onUpdate={renderPresenceFade}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
               >
                 {/* Chip rail: sticky to this scrollport (below safe-area inset on the shell). */}
@@ -1742,6 +1746,7 @@ export default function App() {
                     <motion.div
                       ref={mobileStackRef}
                       key={activeProject}
+                      onUpdate={renderPresenceFade}
                       initial={
                         !isMobile || mobileProjectOpacitySwapEnabled ? { opacity: 0 } : false
                       }
@@ -1772,10 +1777,11 @@ export default function App() {
             ) : (
               <motion.div
                 key="mobile-writing"
-                initial={{ opacity: 0, filter: 'blur(10px)' }}
-                animate={{ opacity: 1, filter: 'blur(0px)' }}
-                exit={{ opacity: 0, filter: 'blur(8px)' }}
-                transition={{ duration: 0.24, ease: [0.23, 1, 0.32, 1] }}
+                onUpdate={renderPresenceFade}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
                 className={
                   `absolute inset-0 min-h-0 ${writingLightboxVisible ? 'z-30' : 'z-10'}`
                 }
