@@ -72,7 +72,7 @@ export function SignatureMotionDebugger({
   ];
 
   return (
-    <details className="fixed bottom-4 left-4 z-[99990] w-[276px] rounded-[14px] border border-black/10 bg-white/90 font-['Inter',sans-serif] text-[12px] text-[#121111] shadow-[0_12px_40px_rgb(0_0_0/0.14)] backdrop-blur-xl">
+    <details className="fixed bottom-4 left-4 z-[99990] w-[276px] rounded-[14px] border border-black/10 bg-white/90 font-['Inter',sans-serif] text-[12px] text-site-ink shadow-[0_12px_40px_rgb(19_16_21/0.14)] backdrop-blur-xl">
       <summary className="cursor-pointer select-none px-3 py-2.5 font-medium tracking-[-0.02em]">
         Signature motion
       </summary>
@@ -100,7 +100,7 @@ export function SignatureMotionDebugger({
                           outDelayEnabled: event.currentTarget.checked,
                         })
                       }
-                      className="h-3.5 w-3.5 accent-[#121111]"
+                      className="h-3.5 w-3.5 accent-[#131015]"
                     />
                     <output className="text-right text-black/55">
                       {settings.outDelayEnabled ? 'On' : 'Off'}
@@ -122,7 +122,7 @@ export function SignatureMotionDebugger({
                           [control.key]: Number(event.currentTarget.value),
                         })
                       }
-                      className="h-1 w-full accent-[#121111]"
+                      className="h-1 w-full accent-[#131015]"
                     />
                     <output className="text-right tabular-nums text-black/55">
                       {settings[control.key]}
@@ -144,7 +144,7 @@ export function SignatureMotionDebugger({
           <button
             type="button"
             onClick={onReplay}
-            className="rounded-lg bg-[#121111] px-2.5 py-2 text-[11px] font-medium text-white transition-transform active:scale-[0.97]"
+            className="rounded-lg bg-site-ink px-2.5 py-2 text-[11px] font-medium text-white transition-transform active:scale-[0.97]"
           >
             Replay
           </button>

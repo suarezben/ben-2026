@@ -1,7 +1,7 @@
 // Motion settings are centralized so the final lightbox design can change independently.
 const CONFIG = {
   response: .48, damping: .88, pageScale: .96, blur: 16,
-  backdropColor: '#000000', backdropDim: .10,
+  backdropColor: '#131015', backdropDim: .10,
   saturation: 140, brightness: 82,
   materialWarmup: .0625, materialWarmupFrames: 3,
   dragRevealDistance: .5, dragMaxReduction: .85,
@@ -642,7 +642,7 @@ document.querySelectorAll('[data-lightbox]').forEach((el,i)=> {
 
 function setupLightboxTuner() {
   const defaults={
-    backdropColor:'#000000', backdropDim:.10, blur:16,
+    backdropColor:'#131015', backdropDim:.10, blur:16,
     saturation:140, brightness:82,
     dragRevealDistance:.5, dragMaxReduction:.85,
     pageScale:.96, response:.48, damping:.88, margin:64,

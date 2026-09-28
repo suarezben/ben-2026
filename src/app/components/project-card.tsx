@@ -11,7 +11,7 @@ import {
 } from '../lib/desktop-rail-layout';
 
 function squircleMaskStyles(width: number, height: number, pathD: string) {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><path fill="#121111" d="${pathD}"/></svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><path fill="#131015" d="${pathD}"/></svg>`;
   const url = `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}")`;
   return {
     WebkitMaskImage: url,
@@ -295,9 +295,9 @@ export function ProjectCard({
   const strokeMobile = strokeFromUrl((imageUrlMobile ?? imageUrl) ?? videoUrl);
   const strokeDesktop = strokeFromUrl(imageUrl ?? videoUrl);
   const strokeColorMobile =
-    strokeMobile === 'white' ? 'rgba(255, 255, 255, 0.127)' : 'rgba(0,0,0,0.04)';
+    strokeMobile === 'white' ? 'rgba(255, 255, 255, 0.127)' : 'rgb(19 16 21 / 0.04)';
   const strokeColorDesktop =
-    strokeDesktop === 'white' ? 'rgba(255, 255, 255, 0.127)' : 'rgba(0,0,0,0.04)';
+    strokeDesktop === 'white' ? 'rgba(255, 255, 255, 0.127)' : 'rgb(19 16 21 / 0.04)';
 
   /** Wait for a frame submitted to the compositor before uncovering the video. */
   const onVideoDecodedFrame = (e: SyntheticEvent<HTMLVideoElement>) => {
@@ -329,7 +329,7 @@ export function ProjectCard({
       >
         <defs>
           <clipPath id={`squircle-stroke-m-${id}`}>
-            <path d={squirclePathMobile} fill="#121111" />
+            <path d={squirclePathMobile} fill="#131015" />
           </clipPath>
         </defs>
         <path
@@ -351,7 +351,7 @@ export function ProjectCard({
       >
         <defs>
           <clipPath id={`squircle-stroke-d-${id}`}>
-            <path d={squirclePathDesktop} fill="#121111" />
+            <path d={squirclePathDesktop} fill="#131015" />
           </clipPath>
         </defs>
         <path

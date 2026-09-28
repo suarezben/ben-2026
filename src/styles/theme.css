@@ -3,22 +3,22 @@
 :root {
   --font-size: 16px;
   --background: #ffffff;
-  --foreground: #121111;
+  --foreground: #131015;
   --card: #ffffff;
-  --card-foreground: #121111;
+  --card-foreground: #131015;
   --popover: oklch(1 0 0);
-  --popover-foreground: #121111;
-  --primary: #121111;
+  --popover-foreground: #131015;
+  --primary: #131015;
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.95 0.0058 264.53);
-  --secondary-foreground: #121111;
+  --secondary-foreground: #131015;
   --muted: #ececf0;
   --muted-foreground: #717182;
   --accent: #e9ebef;
-  --accent-foreground: #121111;
+  --accent-foreground: #131015;
   --destructive: #d4183d;
   --destructive-foreground: #ffffff;
-  --border: rgba(0, 0, 0, 0.1);
+  --border: rgb(19 16 21 / 0.1);
   --input: transparent;
   --input-background: #f3f3f5;
   --switch-background: #cbced4;
@@ -32,8 +32,8 @@
   --chart-5: oklch(0.769 0.188 70.08);
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: #121111;
-  --sidebar-primary: #121111;
+  --sidebar-foreground: #131015;
+  --sidebar-primary: #131015;
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
@@ -79,6 +79,7 @@
 }
 
 @theme inline {
+  --color-black: #131015;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

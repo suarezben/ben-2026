@@ -1468,11 +1468,11 @@ export default function App() {
                 siteView === 'writing' && writingLightboxVisible
                   ? 'none'
                   : siteView === 'writing'
-                    ? '0 -48px 0 0 #fff, inset 0 -1px 0 rgba(0,0,0,0.03)'
+                    ? '0 -48px 0 0 #fff, inset 0 -1px 0 rgb(19 16 21 / 0.03)'
                   : '0 -48px 0 0 #fff',
             }}
           >
-            <div className="font-['Alliance_No.1',sans-serif] font-light leading-[normal] not-italic text-[20px] lg:text-[25px] xl:text-[30px] text-[#121111] tracking-[-1px] lg:tracking-[-1.21px] xl:tracking-[-1.46px] mb-[16px] lg:mb-[20px]">
+            <div className="font-['Alliance_No.1',sans-serif] font-light leading-[normal] not-italic text-[20px] lg:text-[25px] xl:text-[30px] text-site-ink tracking-[-1px] lg:tracking-[-1.21px] xl:tracking-[-1.46px] mb-[16px] lg:mb-[20px]">
               <IntroNameHeading
                 variant="desktop"
                 view={siteView}
@@ -1612,13 +1612,13 @@ export default function App() {
                 siteView === 'writing' && writingLightboxVisible
                   ? 'none'
                   : siteView === 'writing'
-                    ? '0 -48px 0 0 #fff, inset 0 -1px 0 rgba(0,0,0,0.03)'
+                    ? '0 -48px 0 0 #fff, inset 0 -1px 0 rgb(19 16 21 / 0.03)'
                   : '0 -48px 0 0 #fff',
             }}
           >
             <motion.div
               variants={MOBILE_SHELL_STAGGER_CHILD}
-              className="font-['Alliance_No.1',sans-serif] text-[22px] font-light leading-[1.08] not-italic tracking-[-0.99px] text-[#121111]"
+              className="font-['Alliance_No.1',sans-serif] text-[22px] font-light leading-[1.08] not-italic tracking-[-0.99px] text-site-ink"
             >
               <IntroNameHeading
                 variant="mobile"
@@ -1691,7 +1691,7 @@ export default function App() {
                     aria-hidden
                     className="pointer-events-none -mx-[24px] h-px w-auto shrink-0"
                     style={{
-                      backgroundColor: mobilePinnedRuleVisible ? 'rgb(18 17 17 / 0.03)' : '#ffffff',
+                      backgroundColor: mobilePinnedRuleVisible ? 'rgb(19 16 21 / 0.03)' : '#ffffff',
                     }}
                   />
                 </motion.div>

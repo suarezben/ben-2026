@@ -134,14 +134,14 @@ export function IntroNameHeading({
           : { x: SIGNATURE_LAYER_OFFSET, y: 0, scale: 1 };
 
   const signatureClass = isMobile
-    ? 'block h-6 w-[122px] shrink-0 bg-[#121111]'
-    : 'block h-[28px] w-[142px] shrink-0 bg-[#121111] lg:h-[35px] lg:w-[177px] xl:h-[43px] xl:w-[213px]';
+    ? 'block h-6 w-[122px] shrink-0 bg-site-ink'
+    : 'block h-[28px] w-[142px] shrink-0 bg-site-ink lg:h-[35px] lg:w-[177px] xl:h-[43px] xl:w-[213px]';
 
   return (
     <div
       className={
         isMobile
-          ? `flex items-center justify-between ${isWriting ? 'gap-3' : 'gap-0'}`
+          ? 'flex items-center justify-between gap-0'
           : 'flex items-center justify-between gap-4'
       }
     >
@@ -192,7 +192,7 @@ export function IntroNameHeading({
               y: signatureSpring,
               scale: signatureSpring,
             }}
-            className="-ml-px shrink-0 border-0 bg-transparent p-0 text-left focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-[rgb(18_17_17/0.35)] focus-visible:ring-offset-2"
+            className="-ml-px shrink-0 border-0 bg-transparent p-0 text-left focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-site-ink/35 focus-visible:ring-offset-2"
           >
             <span
               aria-hidden="true"
@@ -235,10 +235,8 @@ export function IntroNameHeading({
         aria-label="Primary"
         className={
           isMobile
-            ? isWriting
-              ? 'flex shrink-0 items-center gap-1 text-[20px] font-light leading-[1.08] tracking-[-0.8px] text-[rgb(18_17_17/0.7)]'
-              : 'flex w-[92px] -translate-y-[22px] shrink-0 flex-col items-end justify-center gap-3 text-[22px] font-light leading-[1.08] tracking-[-0.99px] text-[rgb(18_17_17/0.7)]'
-            : 'ml-6 flex shrink-0 items-center gap-[1.35em] text-[16px] text-[rgb(18_17_17/0.7)] lg:text-[20px] xl:text-[24px]'
+            ? 'flex w-[92px] -translate-y-[22px] shrink-0 flex-col items-end justify-center gap-3 text-[22px] font-light leading-[1.08] tracking-[-0.99px] text-site-ink/70'
+            : 'ml-6 flex shrink-0 items-center gap-[1.35em] text-[16px] text-site-ink/70 lg:text-[20px] xl:text-[24px]'
         }
       >
         <motion.button
@@ -248,8 +246,8 @@ export function IntroNameHeading({
           whileTap={{ scale: 0.97 }}
           className={
             isMobile
-              ? `relative grid min-h-11 items-center justify-items-end border-0 bg-transparent px-1.5 py-0 text-right font-light leading-[1.08] text-[rgb(18_17_17/0.7)] focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(18_17_17/0.35)] focus-visible:ring-offset-2 ${isWriting ? 'w-auto text-[20px] tracking-[-0.8px]' : 'w-full items-end text-[22px] tracking-[-0.99px]'}`
-              : 'relative grid w-[3.25em] border-0 bg-transparent p-0 text-left font-light leading-[normal] text-inherit text-[16px] transition-colors duration-200 hover:text-[#121111] focus-visible:rounded-sm focus-visible:text-[#121111] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(18_17_17/0.35)] focus-visible:ring-offset-2 lg:text-[20px] xl:text-[24px]'
+              ? 'relative grid min-h-11 w-full items-end justify-items-end border-0 bg-transparent px-1.5 py-0 text-right text-[22px] font-light leading-[1.08] tracking-[-0.99px] text-site-ink/70 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-site-ink/35 focus-visible:ring-offset-2'
+              : 'relative grid w-[3.25em] border-0 bg-transparent p-0 text-left font-light leading-[normal] text-inherit text-[16px] transition-colors duration-200 hover:text-site-ink focus-visible:rounded-sm focus-visible:text-site-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-site-ink/35 focus-visible:ring-offset-2 lg:text-[20px] xl:text-[24px]'
           }
         >
           <AnimatePresence initial={false} mode="wait">
@@ -272,8 +270,8 @@ export function IntroNameHeading({
           aria-label="Email Benjamin.r.suarez@gmail.com"
           className={
             isMobile
-              ? `inline-flex min-h-11 shrink-0 justify-end px-1.5 text-right font-light text-inherit focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(18_17_17/0.35)] focus-visible:ring-offset-2 ${isWriting ? 'w-auto items-center text-[20px] tracking-[-0.8px]' : 'w-full items-start'}`
-              : 'inline-flex shrink-0 items-center self-center text-inherit transition-colors duration-200 hover:text-[#121111] focus-visible:rounded-sm focus-visible:text-[#121111] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(18_17_17/0.35)] focus-visible:ring-offset-2'
+              ? 'inline-flex min-h-11 w-full shrink-0 items-start justify-end px-1.5 text-right font-light text-inherit focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-site-ink/35 focus-visible:ring-offset-2'
+              : 'inline-flex shrink-0 items-center self-center text-inherit transition-colors duration-200 hover:text-site-ink focus-visible:rounded-sm focus-visible:text-site-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-site-ink/35 focus-visible:ring-offset-2'
           }
         >
           {isMobile ? 'Contact' : 'Email'}

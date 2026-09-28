@@ -33,7 +33,7 @@ const STATIC_DESKTOP_PLACEMENT = [
 
 /** Single 1px hairline — avoid stacking border + inset shadow (reads as ~2px). */
 const CELL_FRAME =
-  'rounded-[32px] border border-solid border-[rgb(0_0_0/0.08)] box-border';
+  'rounded-[32px] border border-solid border-site-ink/8 box-border';
 
 /** 5×2 desktop: same ~233px cells as the original 3×2 × 759px block; width = 5×233 + 4×30. */
 const GRID_WIDTH_MD = 5 * 233 + 4 * 30;
