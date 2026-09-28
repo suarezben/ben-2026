@@ -361,7 +361,11 @@ figcaption {
   display: block;
   border-color: #c5b59c;
 }
+/* Use the SVG outline in the carousel too. Its non-scaling stroke stays a true
+   1px hairline while the card is enlarged in the lightbox. The path is inset
+   in smooth(), so it remains inside the clipped edge at rounded corners. */
 .media.iteration-card.has-smooth-path::after { display: none; }
+.media.iteration-card .media-outline { display: block; }
 .media.iteration-card .media-outline path { stroke: #c5b59c; }
 .iteration-card > .iteration-image {
   inset: 0;
@@ -612,6 +616,10 @@ figcaption {
 }
 .lb-slide { transform-origin: 0 0; will-change: transform; }
 .lb-slide .media { max-width: none; }
+/* Several source videos include a dark capture fringe in their outermost
+   pixels. Hide that baked-in edge behind the modal clip without scaling the
+   SVG hairline, which remains a true non-scaling 1px stroke. */
+.lb-slide .media.in-lb > video { transform: scale(1.03); }
 .lb-placeholder { pointer-events: none; }
 .lb-nav, .lb-close, .lb-download {
   border: 1px solid rgba(255,255,255,.22); color: #fff;
