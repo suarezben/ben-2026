@@ -26,21 +26,20 @@
 
   <header class="post-header">
     <h1 class="title">AI helped me make something I thought was pretty enough to print for the first time in years.</h1>
-    <p class="date">September 29, 2026</p>
+    <p class="date">September 30, 2026</p>
   </header>
 
   <aside class="tldr">
-    <p>TL;DR: I used AI to make a liquid acrylic shader. It made me less disgruntled about the current state of tech, and it felt nice to actually make something I found pretty.</p>
+    <p>TL;DR: I hadn’t felt very inspired by the way AI was changing my design workflow. Using it to make something more creative than I could have made on my own changed my perspective, got me excited about my career again, and brought me back to what drew me to design in the first place.</p>
   </aside>
 
   <h2 class="section-title">Part 1</h2>
 
   <div class="body">
-    <p>I was never inherently interested in technology or computers as a kid, unlike many people I’ve worked with in tech, who talk about building computers, writing software when they were young, etc.</p>
-    <p>However, like many designers in tech, I went to school for graphic design. Computers were mostly just a means to an end for me, a way to make stuff I thought looked cool that I otherwise couldn’t do by hand.</p>
-    <p>Design attracted me because I wanted to make things that were visually interesting, beautiful, and that elicited strong feelings or emotions in people. There are opportunities to do this designing software, for sure, but they had felt few and far between for me lately.</p>
-    <p>Shaders have always been something I was interested in, but I never took the time to learn much about them. With this new technology at my disposal, it felt like a good time to try them out.</p>
-    <p>I’d been working on trying to make art for my living room, without much success, using watered-down liquid acrylic that soaks into a wet canvas. I was inspired by the work a previous colleague of mine does and tried to replicate a version of it.</p>
+    <p>I was never inherently interested in technology or computers as a kid, unlike many people I’ve worked with in tech, who talk about building computers, writing software when they were young, etc. However, like many <em>designers</em> in tech, I went to school for graphic design. Computers were mostly just a means to an end for me, a way to make stuff cool stuff that I otherwise couldn’t do by hand.</p>
+    <p>Design attracted me because in addition to utility, I wanted to make things that were visually interesting, beautiful, and that elicited strong feelings or emotions in people. There are opportunities to do this designing software, for sure, but they had felt few and far between for me lately with such a focus on getting features out the door.</p>
+    <p>Shaders have always been something I wanted to add to my tool kit, but I never took the time to learn much about them. With this new technology at my disposal, it felt like a good time to try them out.</p>
+    <p>I’d been working on trying to make art for my living room using watered-down liquid acrylic that soaks into a wet canvas. I hadn’t had much success of achieving the look and feel i was going for.</p>
   </div>
 
   <figure class="media-block">
@@ -51,7 +50,7 @@
   </figure>
 
   <div class="body">
-    <p>I thought this would be a fun thing to try to create digitally and an opportunity to play with Apple’s Metal for the first time.</p>
+    <p>I thought it would be an interesting challenge to digitally reproduce these physics and an opportunity to play with <a href="https://developer.apple.com/metal/" target="_blank" rel="noopener noreferrer">Apple’s Metal</a> for the first time.</p>
     <p>My first pass was creating a canvas that simulated liquid acrylic ink on a wet surface and reacted to device orientation using the gyroscope.</p>
   </div>
 
@@ -88,7 +87,7 @@
         <div class="phone iteration-card media media--bare" data-lightbox><img class="iteration-image" src="Assets/iterations-hq/iteration-05.webp" alt="Mauve and lavender liquid acrylic iteration" loading="lazy"></div>
       </div>
     </div>
-    <figcaption>Seeing the iterations laid out was satisfying.</figcaption>
+    <figcaption>Seeing the iterations splayed out brought me a lot of joy.</figcaption>
   </figure>
 
   <figure class="media-block">
@@ -113,7 +112,8 @@
       <li><em>How hard it leans into a tilt, and how long it takes to notice one</em></li>
       <li><em>How much pigment piles up in the dark line at a wash’s leading edge</em></li>
     </ul>
-    <p>Most of the work was figuring out how all those values played off each other. Underneath, the paint is really two layers, a wet film and a dried stain, and drying moves pigment from one into the other. Rehydration runs that backwards: re-wet a patch and the dried stain dissolves back into the film, so old marks wake up and move again.</p>
+    <p>etc.</p>
+    <p>Most of the work was figuring out how all those values played off each other. Underneath, the paint is really two layers, a wet film and a dried stain, and drying moves pigment from one into the other. Rehydration runs that backwards. Re-wet a patch and the dried stain dissolves back into the film, so old marks wake up and move again.</p>
   </div>
 
   <figure class="media-block">
@@ -124,7 +124,7 @@
   </figure>
 
   <div class="body">
-    <p>This thing was very fun to play with. I found myself, when bored or waiting in line or something, just opening it up and playing with the ink, trying to make new patterns and stains.</p>
+    <p>This was surprisingly fun to play with. When I was bored or waiting in line, I’d open it up and play with the ink, trying to make new patterns and stains.</p>
   </div>
 
   <h2 class="section-title">Part 2</h2>
@@ -146,11 +146,11 @@
   </figure>
 
   <div class="body">
-    <p>I liked that the app felt <em>alive</em>. Like my actions, or lack of action, left an impression on it.</p>
-    <ul>
-      <li><em>Was I lying down with my phone and seeing the ink drip more aggressively?</em></li>
-      <li><em>Did I hold it in place for a while, taking my time to read something and feeling it soak in and leave stains and <a href="https://en.wikipedia.org/wiki/Coffee_ring_effect" target="_blank" rel="noopener noreferrer">tide lines</a>?</em></li>
-    </ul>
+    <p>I liked that the app felt alive. It responded not just to what I intentionally did, but to the incidental reality of how I was using it.</p>
+    <p>If I leaned or lay down, the ink shifted and dripped with me.</p>
+    <p>If I paused to read, it had time to soak in and leave stains and tide lines.</p>
+    <p>If I looked away, it kept moving, leaving a little record of the time that had passed.</p>
+    <p>Even when I wasn’t consciously interacting with it, I was still leaving a trace of myself behind.</p>
   </div>
 
   <!-- Part 2 card 2: both streak variants, treated as ONE media -->
@@ -165,7 +165,8 @@
   </figure>
 
   <div class="body">
-    <p>How would I expect the ink to behave with transitions in motion, as if the invisible container holding the ink were being sloshed and shoved around?</p>
+    <p>What about interactions and motion?</p>
+    <p>If a card moved, could the ink inside it slosh around as if an invisible bounds was pushing the ink around a canvas?</p>
   </div>
 
   <figure class="media-block">
@@ -249,7 +250,7 @@
   </figure>
 
   <div class="body">
-    <p>I started with traditional buttons and stuff for going in and out of feelings, but it was killing my serene vibes 🧘‍♂️😌.</p>
+    <p>I started with traditional buttons and stuff for going in and out of feelings, but it was killing my serene vibes ️😌.</p>
     <p>Besides, “Always make it fluidddd.”</p>
   </div>
 
@@ -266,14 +267,14 @@
   </figure>
 
   <div class="body">
-    <p>For something I want to build a habit around, like a mood picker, there was practical value in having something I just found fun to use.</p>
+    <p>For a mood picker, being fun to use felt practical. If I enjoyed using it, I was more likely to make it a habit.</p>
   </div>
 
   <figure class="media-block">
     <div class="media" style="aspect-ratio: 600/750" data-lightbox>
       <video src="Assets/video/step2_take04_interupt1.mp4" muted loop playsinline preload="metadata"></video>
     </div>
-    <figcaption>Exploring my moods 🤨</figcaption>
+    <figcaption>Exploring my moods 😄 😌 😴 😢 😨 😠 😳</figcaption>
   </figure>
 
   <figure class="media-block">
@@ -318,7 +319,7 @@
   </figure>
 
   <div class="body">
-    <p>The experiences of past feelings are still kind of always alive in there, even while scrolling through past entries.</p>
+    <p>I’ve always felt like my past emotions are still in me somewhere. To represent that, I rehydrated the ink as I scrolled through previous entries, briefly bringing each feeling back to life.</p>
   </div>
 
   <figure class="media-block">
@@ -329,7 +330,11 @@
   </figure>
 
   <div class="body">
-    <p>What will become of this work? I’m not really sure, but it definitely was the spark that ignited a new optimism and even excitement about my work as a designer. It helped me reconnect with some of my own core values around my work and the sort of stuff I want to be doing. It was an important lesson for me to stay open-minded and fight my own curmudgeonliness when I see it start to pop up.</p>
+    <p>What will become of this work? I’m not really sure, but it sparked a new optimism</p>
+    <p>What will become of this work? I’m not really sure, but it made me optimistic and even excited about my future in design. It reconnected me with what I value in my work and where I want to spend my energy.</p>
+    <p>The process had plenty of ups and downs. Sometimes I felt maximally powerful. Other times I wanted to chuck my computer. I’ve all-caps-yelled at every model under the sun, but fortunately, they don’t hold grudges.</p>
+    <p>The bigger lesson was to stay open-minded and fight my own curmudgeonliness in response to change. I might write a lil more about what worked and what didn’t if folks would find that useful.</p>
+    <p>Anyway, try to stay curious, and I’ll do the same!</p>
   </div>
 
 </main>
