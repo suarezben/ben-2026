@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
 <meta name="build-id" content="v17-group-rubber-band">
-<title>AI helped me make something pretty enough to print</title>
+<title>AI helped me build something I thought was worthy of printing for the first time in years.</title>
 <meta name="description" content="Experiments with liquid acrylic shaders, playful physics, and a canvas of emotions.">
 <script>
   const embeddedVariant = new URLSearchParams(location.search).get('embedded');
@@ -29,32 +29,37 @@
   </figure>
 
   <header class="post-header">
-    <h1 class="title">AI helped me make something I thought was pretty enough to print for the first time in years.</h1>
-    <p class="date">September 30, 2026</p>
+    <h1 class="title">AI helped me build something I thought was worthy of printing for the first time in years.</h1>
+    <p class="date">September 29, 2026</p>
   </header>
 
   <aside class="tldr">
-    <p>TL;DR: I hadn’t felt very inspired by the way AI was changing my design workflow. Using it to make something more creative than I could have made on my own changed my perspective, got me excited about my career again, and brought me back to what drew me to design in the first place.</p>
+    <p>TL;DR: I hadn’t felt very inspired by the way AI was changing my design workflow. Channeling it towards creative unlocks changed my perspective, got me excited about my career again, and brought me back to what drew me to design in the first place: making useful and <em>beautiful</em> things.</p>
   </aside>
 
   <h2 class="section-title">Part 1</h2>
 
   <div class="body">
-    <p>I was never inherently interested in technology or computers as a kid, unlike many people I’ve worked with in tech, who talk about building computers, writing software when they were young, etc. However, like many <em>designers</em> in tech, I went to school for graphic design. Computers were mostly just a means to an end for me, a way to make stuff cool stuff that I otherwise couldn’t do by hand.</p>
+    <p>I was never inherently interested in technology or computers as a kid, unlike many people I’ve worked with in tech, who talk about building computers, writing software when they were young, etc. However, like many <em>designers</em> in tech, I went to school for graphic design. Computers were mostly just a means to an end for me, a way to make cool stuff that I otherwise couldn’t do by hand.</p>
     <p>Design attracted me because in addition to utility, I wanted to make things that were visually interesting, beautiful, and that elicited strong feelings or emotions in people. There are opportunities to do this designing software, for sure, but they had felt few and far between for me lately with such a focus on getting features out the door.</p>
-    <p>Shaders have always been something I wanted to add to my tool kit, but I never took the time to learn much about them. With this new technology at my disposal, it felt like a good time to try them out.</p>
-    <p>I’d been working on trying to make art for my living room using watered-down liquid acrylic that soaks into a wet canvas. I hadn’t had much success of achieving the look and feel i was going for.</p>
+    <p>Shaders have always been something I wanted to add to my toolkit, but I never took the time to <a href="https://thebookofshaders.com/" target="_blank" rel="noopener noreferrer">learn much about them</a>. With this new technology at my disposal, it felt like a good time to try them out.</p>
+    <p>I’d been working on trying to make art for my living room using watered-down liquid acrylic that soaks into a wet canvas. I hadn’t had much success achieving the look and feel I was going for.</p>
   </div>
 
   <figure class="media-block">
     <div class="media media--static" style="aspect-ratio: 4/3" data-lightbox>
       <img src="Assets/backyard-artwork.jpg" alt="Backyard artwork" loading="lazy">
     </div>
-    <figcaption>Backyard artwork</figcaption>
+    <figcaption>Canvas swatches testing how much water goes in the ink and on the canvas.</figcaption>
   </figure>
 
   <div class="body">
     <p>I thought it would be an interesting challenge to digitally reproduce these physics and an opportunity to play with <a href="https://developer.apple.com/metal/" target="_blank" rel="noopener noreferrer">Apple’s Metal</a> for the first time.</p>
+  </div>
+
+  <h2 class="section-title">Part 2</h2>
+
+  <div class="body">
     <p>My first pass was creating a canvas that simulated liquid acrylic ink on a wet surface and reacted to device orientation using the gyroscope.</p>
   </div>
 
@@ -62,7 +67,7 @@
     <div class="media" style="aspect-ratio: 600/750" data-lightbox>
       <video src="Assets/video/step1_take02.mp4" muted loop playsinline preload="metadata"></video>
     </div>
-    <figcaption>First pass of my liquid acrylic simulation</figcaption>
+    <figcaption>Ink on a wet surface, reacting to tilt.</figcaption>
   </figure>
 
   <figure class="media-block">
@@ -74,7 +79,7 @@
         <video src="Assets/video/step1_take05.mp4" muted loop playsinline preload="metadata"></video>
       </div>
     </div>
-    <figcaption>It’s really satisfying to have it pool at the edge and then fall down a bunch.</figcaption>
+    <figcaption>It’s really satisfying to have it pool at the edge and then let go all at once.</figcaption>
   </figure>
 
   <figure class="media-block media-block--carousel">
@@ -94,6 +99,10 @@
     <figcaption>Seeing the iterations splayed out brought me a lot of joy.</figcaption>
   </figure>
 
+  <div class="body">
+    <p>One effect I really like is what happens when the ink has a lot of momentum. The front edge can’t stay smooth, because any spot on the edge that’s a little thicker flows a little faster, pulls ahead of the ink around it, and keeps pulling away until the edge splits into these “fingers.” I later learned the actual name for this phenomenon is indeed “<a href="https://en.wikipedia.org/wiki/Saffman%E2%80%93Taylor_instability" target="_blank" rel="noopener noreferrer">fingering instability</a>.”</p>
+  </div>
+
   <figure class="media-block">
     <div class="media-row" data-group>
       <div class="media" style="aspect-ratio: 600/750" data-lightbox>
@@ -107,7 +116,6 @@
   </figure>
 
   <div class="body">
-    <p>One effect I really like is what happens when the ink has a lot of momentum. The front edge can’t stay smooth, because any spot on the edge that’s a little thicker flows a little faster, pulls ahead of the ink around it, and keeps pulling away until the edge splits into these “fingers”. I later learned the actual name for this phenomenon is indeed “fingering instability”.</p>
     <p>I had a lot of fun tweaking the feel and figuring out what the abstractions should be:</p>
     <ul>
       <li><em>How wet the paint is</em></li>
@@ -115,8 +123,8 @@
       <li><em>How quickly it dries into stains and tide lines</em></li>
       <li><em>How hard it leans into a tilt, and how long it takes to notice one</em></li>
       <li><em>How much pigment piles up in the dark line at a wash’s leading edge</em></li>
+      <li><em>etc.</em></li>
     </ul>
-    <p>etc.</p>
     <p>Most of the work was figuring out how all those values played off each other. Underneath, the paint is really two layers, a wet film and a dried stain, and drying moves pigment from one into the other. Rehydration runs that backwards. Re-wet a patch and the dried stain dissolves back into the film, so old marks wake up and move again.</p>
   </div>
 
@@ -131,7 +139,7 @@
     <p>This was surprisingly fun to play with. When I was bored or waiting in line, I’d open it up and play with the ink, trying to make new patterns and stains.</p>
   </div>
 
-  <h2 class="section-title">Part 2</h2>
+  <h2 class="section-title">Part 3</h2>
 
   <div class="body">
     <p>Could this have a practical application as a UI material? I’d been noodling on a few mental-health-focused apps, which was a bit of the inspiration for this particular look and feel.</p>
@@ -151,9 +159,9 @@
 
   <div class="body">
     <p>I liked that the app felt alive. It responded not just to what I intentionally did, but to the incidental reality of how I was using it.</p>
-    <p>If I leaned or lay down, the ink shifted and dripped with me.</p>
-    <p>If I paused to read, it had time to soak in and leave stains and tide lines.</p>
-    <p>If I looked away, it kept moving, leaving a little record of the time that had passed.</p>
+    <p><em>If I leaned or lay down, the ink shifted and dripped with me.</em></p>
+    <p><em>If I paused to read, it had time to soak in and leave stains and <a href="https://en.wikipedia.org/wiki/Coffee_ring_effect" target="_blank" rel="noopener noreferrer">tide lines</a>.</em></p>
+    <p><em>If I looked away, it kept moving, leaving a little record of the time that had passed.</em></p>
     <p>Even when I wasn’t consciously interacting with it, I was still leaving a trace of myself behind.</p>
   </div>
 
@@ -165,12 +173,12 @@
         <div class="card-video"><video src="Assets/video/card-harbor-streak.mp4" muted loop playsinline preload="metadata"></video></div>
       </div>
     </div>
-    <figcaption>Lorem</figcaption>
+    <figcaption>Exploring size variations</figcaption>
   </figure>
 
   <div class="body">
     <p>What about interactions and motion?</p>
-    <p>If a card moved, could the ink inside it slosh around as if an invisible bounds was pushing the ink around a canvas?</p>
+    <p>If a card moved, could the ink inside it slosh around as if invisible bounds were <em>pushing</em> the ink around a canvas?</p>
   </div>
 
   <figure class="media-block">
@@ -182,7 +190,6 @@
         <video src="Assets/video/step3_take08.mp4" muted loop playsinline preload="metadata"></video>
       </div>
     </div>
-    <figcaption>Started with a shape playground</figcaption>
   </figure>
 
   <figure class="media-block">
@@ -194,7 +201,7 @@
         <video src="Assets/video/step3_take03.mp4" muted loop playsinline preload="metadata"></video>
       </div>
     </div>
-    <figcaption>Lorem</figcaption>
+    <figcaption>Shape playground</figcaption>
   </figure>
 
   <figure class="media-block">
@@ -210,13 +217,14 @@
   </figure>
 
   <div class="body">
-    <p>I still need to push further on practical application, but I wanted to move on and explore freeing the ink from hard bounds while still using it as the interface material.</p>
+    <p>There’s a lot more to explore and pressure test for practical applications, but I wanted to move on and test freeing the ink from hard bounds while still using it as the interface material.</p>
   </div>
 
-  <h2 class="section-title">Part 3</h2>
+  <h2 class="section-title">Part 4</h2>
 
   <div class="body">
-    <p>I’ve always wanted to design a mood picker app.<br>What if feelings were represented by ink?</p>
+    <p>I’ve always wanted to design a mood picker app.</p>
+    <p>What if feelings were represented by ink?</p>
   </div>
 
   <figure class="media-block">
@@ -254,7 +262,7 @@
   </figure>
 
   <div class="body">
-    <p>I started with traditional buttons and stuff for going in and out of feelings, but it was killing my serene vibes ️😌.</p>
+    <p>I started with traditional buttons and stuff for going in and out of feelings, but it was killing my serene vibes 🧘‍♂️😌.</p>
     <p>Besides, “Always make it fluidddd.”</p>
   </div>
 
@@ -292,7 +300,7 @@
     <p>That was the extent of what I built for this one. Figured I’d build out the tracking part later. I wanted to move on to adding bounds to the ink once again.</p>
   </div>
 
-  <h2 class="section-title">Part 4</h2>
+  <h2 class="section-title">Part 5</h2>
 
   <div class="body">
     <p>What if selecting moods slapped ink onto a canvas? I liked the idea of being able to browse a gallery of my past moods.</p>
@@ -302,7 +310,7 @@
     <div class="media" style="aspect-ratio: 600/750" data-lightbox>
       <video src="Assets/video/step4_take02_initialflow_plusscroll_part-1.mp4" muted loop playsinline preload="metadata"></video>
     </div>
-    <figcaption>One entry, start to finish. Pick the moods, submit, and they land on the canvas as ink.</figcaption>
+    <figcaption>Making an entry</figcaption>
   </figure>
 
   <!-- Looping full-bleed phone carousel -->
@@ -334,10 +342,9 @@
   </figure>
 
   <div class="body">
-    <p>What will become of this work? I’m not really sure, but it sparked a new optimism</p>
-    <p>What will become of this work? I’m not really sure, but it made me optimistic and even excited about my future in design. It reconnected me with what I value in my work and where I want to spend my energy.</p>
-    <p>The process had plenty of ups and downs. Sometimes I felt maximally powerful. Other times I wanted to chuck my computer. I’ve all-caps-yelled at every model under the sun, but fortunately, they don’t hold grudges.</p>
-    <p>The bigger lesson was to stay open-minded and fight my own curmudgeonliness in response to change. I might write a lil more about what worked and what didn’t if folks would find that useful.</p>
+    <p>What will become of all this? I’m not really sure, but it made me optimistic and even excited about my future in design. It reconnected me with what I value in my work and where I want to spend my energy.</p>
+    <p>The process had plenty of ups and downs. Sometimes I felt maximally powerful. Other times I wanted to chuck my computer. I’ve all-caps-yelled at every model under the sun.</p>
+    <p>The bigger lesson was to stay open-minded and fight my own curmudgeonliness in response to change. I might write more about what worked and what didn’t if folks would find that useful.</p>
     <p>Anyway, try to stay curious, and I’ll do the same!</p>
   </div>
 

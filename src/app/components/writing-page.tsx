@@ -132,7 +132,7 @@ export function WritingPage({
       <iframe
         ref={iframeRef}
         src={`${ARTICLE_PATH}?embedded=${variant}`}
-        title="AI helped me make something I thought was pretty enough to print"
+        title="AI helped me build something I thought was worthy of printing for the first time in years."
         className="block h-full w-full border-0 bg-white"
         allow="autoplay; fullscreen"
         onLoad={(event) => connectArticle(event.currentTarget)}
