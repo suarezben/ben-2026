@@ -1,8 +1,12 @@
+import { createPortal } from 'react-dom';
+
 export function WritingPage({ variant }: { variant: 'desktop' | 'mobile' }) {
-  return (
+  return createPortal(
     <main
       aria-labelledby={`writing-message-${variant}`}
-      className="pointer-events-none fixed inset-0 flex items-center justify-center"
+      className={`pointer-events-none fixed inset-0 items-center justify-center ${
+        variant === 'desktop' ? 'hidden md:flex' : 'flex md:hidden'
+      }`}
     >
       <p
         id={`writing-message-${variant}`}
@@ -10,6 +14,7 @@ export function WritingPage({ variant }: { variant: 'desktop' | 'mobile' }) {
       >
         Coming soon
       </p>
-    </main>
+    </main>,
+    document.body
   );
 }
