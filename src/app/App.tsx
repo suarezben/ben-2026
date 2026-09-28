@@ -1,6 +1,8 @@
 import { useState, useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { motion, AnimatePresence, animate } from 'motion/react';
 import { IntroNameHeading } from './components/intro-name-heading';
+import { WritingPage } from './components/writing-page';
+import { SignatureMotionDebugger } from './components/signature-motion-debugger';
 import { ProjectChip } from './components/project-chip';
 import { IntroCard } from './components/intro-card';
 import { ProjectCard } from './components/project-card';
@@ -17,6 +19,11 @@ import projectMedia from '@/content/project-media.json';
 import projectLogos from '@/content/project-logos.json';
 import { queueMediaPrefetch, prioritizeMediaPrefetch } from './lib/prefetch-media';
 import { LYFT_DESKTOP_RAIL_WIDTH_SCALE } from './lib/desktop-rail-layout';
+import {
+  DEFAULT_SIGNATURE_MOTION,
+  SIGNATURE_MOTION_STORAGE_KEY,
+  type SignatureMotionSettings,
+} from './lib/signature-motion-settings';
 
 /** Manifest entry from generate-project-media.mjs (URLs already carry `?v=<hash>`). */
 type ProjectMediaEntry = {
@@ -417,8 +424,66 @@ function useBackgroundMediaPrefetch(activeProject: string) {
   }, [activeProject]);
 }
 
+type SiteView = 'work' | 'writing';
+
+function siteViewFromLocation(): SiteView {
+  if (typeof window === 'undefined') return 'work';
+  return window.location.pathname.replace(/\/+$/, '').endsWith('/writing')
+    ? 'writing'
+    : 'work';
+}
+
+function resolveSignatureMotionSettings(
+  settings: Partial<SignatureMotionSettings>
+): SignatureMotionSettings {
+  const hasReturnAnticipation =
+    typeof settings.outAnticipationPx === 'number' &&
+    typeof settings.outAnticipationMs === 'number';
+  const merged = { ...DEFAULT_SIGNATURE_MOTION, ...settings };
+
+  return {
+    ...merged,
+    // Migrate the previous debugger schema without losing its tuned inbound values.
+    outDelayEnabled:
+      typeof settings.outDelayEnabled === 'boolean'
+        ? settings.outDelayEnabled
+        : true,
+    outDelayMs:
+      typeof settings.outDelayEnabled !== 'boolean' && settings.outDelayMs === 0
+        ? 50
+        : merged.outDelayMs,
+    outAnticipationPx: hasReturnAnticipation
+      ? merged.outAnticipationPx
+      : merged.anticipationPx,
+    outAnticipationMs: hasReturnAnticipation
+      ? merged.outAnticipationMs
+      : merged.anticipationMs,
+  };
+}
+
+function initialSignatureMotionSettings(): SignatureMotionSettings {
+  if (!import.meta.env.DEV || typeof window === 'undefined') {
+    return DEFAULT_SIGNATURE_MOTION;
+  }
+  try {
+    const saved = window.localStorage.getItem(SIGNATURE_MOTION_STORAGE_KEY);
+    return saved
+      ? resolveSignatureMotionSettings(JSON.parse(saved))
+      : DEFAULT_SIGNATURE_MOTION;
+  } catch {
+    return DEFAULT_SIGNATURE_MOTION;
+  }
+}
+
 export default function App() {
   const [activeProject, setActiveProject] = useState('meta');
+  const [siteView, setSiteView] = useState<SiteView>(siteViewFromLocation);
+  const [signatureMotionSettings, setSignatureMotionSettings] =
+    useState<SignatureMotionSettings>(initialSignatureMotionSettings);
+  // Also normalizes Fast Refresh state when the debugger schema gains a control.
+  const resolvedSignatureMotionSettings = resolveSignatureMotionSettings(
+    signatureMotionSettings
+  );
   const activeProjectRef = useRef(activeProject);
   activeProjectRef.current = activeProject;
   const [isMobile, setIsMobile] = useState(
@@ -510,6 +575,63 @@ export default function App() {
   const mobileStartX = useRef(0);
   const mobileScrollLeft = useRef(0);
   const currentOffset = useRef(0);
+  const signatureReplayTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    try {
+      window.localStorage.setItem(
+        SIGNATURE_MOTION_STORAGE_KEY,
+        JSON.stringify(resolvedSignatureMotionSettings)
+      );
+    } catch {
+      /* Dev convenience only; animation still works when storage is unavailable. */
+    }
+  }, [signatureMotionSettings]);
+
+  const replaySignatureMotion = () => {
+    if (signatureReplayTimeoutRef.current !== null) {
+      window.clearTimeout(signatureReplayTimeoutRef.current);
+    }
+    setSiteView('work');
+    signatureReplayTimeoutRef.current = window.setTimeout(() => {
+      setSiteView('writing');
+      const writingPath = `${import.meta.env.BASE_URL}writing`;
+      window.history.replaceState({ siteView: 'writing' }, '', writingPath);
+      signatureReplayTimeoutRef.current = null;
+    }, 800);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (signatureReplayTimeoutRef.current !== null) {
+        window.clearTimeout(signatureReplayTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const navigateToView = (nextView: SiteView) => {
+    setSiteView(nextView);
+    const basePath = import.meta.env.BASE_URL;
+    const nextPath = nextView === 'writing' ? `${basePath}writing` : basePath;
+    if (window.location.pathname !== nextPath) {
+      window.history.pushState({ siteView: nextView }, '', nextPath);
+    }
+    requestAnimationFrame(() => {
+      mobileScrollContainerRef.current?.scrollTo({ top: 0, behavior: 'instant' });
+    });
+  };
+
+  const handleSignatureClick = () => {
+    setActiveProject('meta');
+    navigateToView('work');
+  };
+
+  useEffect(() => {
+    const handlePopState = () => setSiteView(siteViewFromLocation());
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
   
   // Detect mobile on mount + resize (initial state matches `md:hidden` / 768px breakpoint).
   useEffect(() => {
@@ -1309,6 +1431,16 @@ export default function App() {
         <CustomCursor isPressed={isPressed} />
       </div>
 
+      {import.meta.env.DEV && (
+        <SignatureMotionDebugger
+          settings={resolvedSignatureMotionSettings}
+          isMobile={isMobile}
+          onChange={setSignatureMotionSettings}
+          onReset={() => setSignatureMotionSettings(DEFAULT_SIGNATURE_MOTION)}
+          onReplay={replaySignatureMotion}
+        />
+      )}
+
       {/* Desktop Layout */}
       <div className="hidden md:block md:h-full md:min-h-0">
         <div
@@ -1320,40 +1452,78 @@ export default function App() {
             <div className="font-['Alliance_No.1',sans-serif] font-light leading-[normal] not-italic text-[20px] lg:text-[25px] xl:text-[30px] text-[#121111] tracking-[-1px] lg:tracking-[-1.21px] xl:tracking-[-1.46px] mb-[16px] lg:mb-[20px]">
               <IntroNameHeading
                 variant="desktop"
-                onSignatureClick={() => setActiveProject('meta')}
+                view={siteView}
+                onSignatureClick={handleSignatureClick}
+                onWritingClick={() => navigateToView('writing')}
+                onWorkClick={() => navigateToView('work')}
+                motionSettings={resolvedSignatureMotionSettings}
               />
             </div>
 
             {/* Desktop chips: one row until the content edge, then natural wrap (mobile stays horizontal scroll). */}
-            <div className="flex w-full min-w-0 flex-wrap gap-[4px] lg:gap-[4px] xl:gap-[5px]">
-              {projectsWithMedia.map((project) => (
-                <ProjectChip
-                  key={project.id}
-                  label={project.name}
-                  isActive={activeProject === project.id}
-                  onClick={() => setActiveProject(project.id)}
-                />
-              ))}
-            </div>
+            <AnimatePresence initial={false} mode="sync">
+              {siteView === 'work' && (
+                <motion.div
+                  key="desktop-project-chips"
+                  layout
+                  initial={{ opacity: 0, filter: 'blur(8px)' }}
+                  animate={{ opacity: 1, filter: 'blur(0px)' }}
+                  exit={{ opacity: 0, filter: 'blur(8px)' }}
+                  transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
+                  className="flex w-full min-w-0 flex-wrap gap-[4px] lg:gap-[4px] xl:gap-[5px]"
+                >
+                  {projectsWithMedia.map((project) => (
+                    <ProjectChip
+                      key={project.id}
+                      label={project.name}
+                      isActive={activeProject === project.id}
+                      onClick={() => setActiveProject(project.id)}
+                    />
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
-          {/* Horizontal Scrolling Projects — markup lives in `desktop-carousel-rail.tsx` so JSX can’t break the whole app. */}
-          <DesktopCarouselRail
-            scrollContainerRef={scrollContainerRef}
-            desktopCarouselZoomRef={desktopCarouselZoomRef}
-            desktopCarouselRowRef={desktopCarouselRowRef}
-            onMouseDown={handleMouseDown}
-            onWheel={handleCarouselWheel}
-            desktopCarouselContentScale={desktopCarouselContentScale}
-            onExitComplete={handleDesktopContentExitComplete}
-            onEnterAnimationComplete={() => {
-              requestAnimationFrame(() => desktopCarouselBurstRemeasureRef.current?.());
-            }}
-            activeProject={activeProject}
-            rubberBandOffset={rubberBandOffset}
-            currentProject={currentProject}
-            desktopLyftRailScale={desktopLyftRailScale}
-          />
+          <AnimatePresence initial={false} mode="wait">
+            {siteView === 'work' ? (
+              <motion.div
+                key="desktop-work"
+                initial={{ opacity: 0, filter: 'blur(8px)' }}
+                animate={{ opacity: 1, filter: 'blur(0px)' }}
+                exit={{ opacity: 0, filter: 'blur(8px)' }}
+                transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
+              >
+                {/* Horizontal Scrolling Projects — markup lives in `desktop-carousel-rail.tsx` so JSX can’t break the whole app. */}
+                <DesktopCarouselRail
+                  scrollContainerRef={scrollContainerRef}
+                  desktopCarouselZoomRef={desktopCarouselZoomRef}
+                  desktopCarouselRowRef={desktopCarouselRowRef}
+                  onMouseDown={handleMouseDown}
+                  onWheel={handleCarouselWheel}
+                  desktopCarouselContentScale={desktopCarouselContentScale}
+                  onExitComplete={handleDesktopContentExitComplete}
+                  onEnterAnimationComplete={() => {
+                    requestAnimationFrame(() => desktopCarouselBurstRemeasureRef.current?.());
+                  }}
+                  activeProject={activeProject}
+                  rubberBandOffset={rubberBandOffset}
+                  currentProject={currentProject}
+                  desktopLyftRailScale={desktopLyftRailScale}
+                />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="desktop-writing"
+                initial={{ opacity: 0, filter: 'blur(10px)' }}
+                animate={{ opacity: 1, filter: 'blur(0px)' }}
+                exit={{ opacity: 0, filter: 'blur(8px)' }}
+                transition={{ duration: 0.24, ease: [0.23, 1, 0.32, 1] }}
+              >
+                <WritingPage variant="desktop" />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -1382,98 +1552,123 @@ export default function App() {
           >
             <IntroNameHeading
               variant="mobile"
-              onSignatureClick={() => setActiveProject('meta')}
+              view={siteView}
+              onSignatureClick={handleSignatureClick}
+              onWritingClick={() => navigateToView('writing')}
+              onWorkClick={() => navigateToView('work')}
+              motionSettings={resolvedSignatureMotionSettings}
             />
           </motion.div>
 
-          {/* Chip rail: sticky to this scrollport (below safe-area inset on the shell). */}
-          <motion.div
-            ref={mobileChipRailRef}
-            variants={MOBILE_SHELL_STAGGER_CHILD}
-            className="sticky z-10 -mx-[24px] bg-white px-[24px]"
-            style={{
-              top: 0,
-              // Fixed top padding avoids a 0↔8px jump when swapping chips while pinned (was tied to
-              // `mobileChipsPinned`, which could disagree with scroll for a frame).
-              paddingTop: 8,
-            }}
-          >
-            <div
-              ref={chipScrollRef}
-              className="overflow-x-auto -mx-[24px] hide-scrollbar pb-[12px]"
-              onMouseDown={handleChipMouseDown}
-              onMouseMove={handleChipMouseMove}
-              onMouseUp={handleChipMouseUp}
-              onMouseLeave={handleChipMouseLeave}
-              onWheel={handleChipWheel}
-              onTouchStartCapture={handleChipTouchStart}
-              onTouchMoveCapture={handleChipTouchMove}
-              onTouchEndCapture={handleChipTouchEnd}
-              onTouchCancelCapture={handleChipTouchEnd}
-              style={{
-                WebkitOverflowScrolling: 'touch',
-                touchAction: 'pan-x',
-                overscrollBehaviorX: 'contain',
-                // Keeps capsule ends off the scroll clip rect so squircles aren’t sheared flat on screen edges.
-                scrollPaddingInline: '10px',
-              }}
-            >
-              <div className="flex w-max gap-[6px] px-[24px]">
-                {projectsWithMedia.map((project) => (
-                  <ProjectChip
-                    key={project.id}
-                    label={project.name}
-                    isActive={activeProject === project.id}
-                    onClick={() => handleChipClick(project.id)}
-                    ref={(el) => chipRefs.current[project.id] = el}
-                    onClickCapture={handleChipClickCapture}
-                  />
-                ))}
-              </div>
-            </div>
-            {/* 1px rule without `border: solid transparent` — iOS WebKit often paints that as a grey hairline. */}
-            {/* Space above rule lives in chip scroll pb-[12px]; rule sits at bottom of white panel (not flush under pills). */}
-            <div
-              aria-hidden
-              className="pointer-events-none -mx-[24px] h-px w-auto shrink-0"
-              style={{
-                backgroundColor: mobilePinnedRuleVisible ? 'rgb(18 17 17 / 0.03)' : '#ffffff',
-              }}
-            />
-          </motion.div>
-
-          {/* Vertical Stack of Cards */}
-          <motion.div variants={MOBILE_SHELL_STAGGER_CHILD}>
-            <AnimatePresence mode="wait" onExitComplete={handleMobileContentExitComplete}>
+          <AnimatePresence initial={false} mode="wait">
+            {siteView === 'work' ? (
               <motion.div
-                ref={mobileStackRef}
-                key={activeProject}
-                initial={
-                  !isMobile || mobileProjectOpacitySwapEnabled ? { opacity: 0 } : false
-                }
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: isMobile ? 0.16 : 0.25, ease: 'easeInOut' }}
-                className="mb-[8px] mt-[10px] flex flex-col gap-[24px]"
+                key="mobile-work"
+                initial={{ opacity: 0, filter: 'blur(8px)' }}
+                animate={{ opacity: 1, filter: 'blur(0px)' }}
+                exit={{ opacity: 0, filter: 'blur(8px)' }}
+                transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
               >
-                <IntroCard
-                  {...currentProject.introCard}
-                  railWidthScale={desktopLyftRailScale}
-                />
-                {currentProject.id === 'sutter-hill' ? (
-                  <SutterHillLogoGrid />
-                ) : (
-                  currentProject.cards.map((card, index) => (
-                    <ProjectCard
-                      key={index}
-                      {...card}
-                      desktopRailWidthScale={desktopLyftRailScale ?? 1}
-                    />
-                  ))
-                )}
+                {/* Chip rail: sticky to this scrollport (below safe-area inset on the shell). */}
+                <motion.div
+                  ref={mobileChipRailRef}
+                  variants={MOBILE_SHELL_STAGGER_CHILD}
+                  className="sticky z-10 -mx-[24px] bg-white px-[24px]"
+                  style={{
+                    top: 0,
+                    // Fixed top padding avoids a 0↔8px jump when swapping chips while pinned (was tied to
+                    // `mobileChipsPinned`, which could disagree with scroll for a frame).
+                    paddingTop: 8,
+                  }}
+                >
+                  <div
+                    ref={chipScrollRef}
+                    className="overflow-x-auto -mx-[24px] hide-scrollbar pb-[12px]"
+                    onMouseDown={handleChipMouseDown}
+                    onMouseMove={handleChipMouseMove}
+                    onMouseUp={handleChipMouseUp}
+                    onMouseLeave={handleChipMouseLeave}
+                    onWheel={handleChipWheel}
+                    onTouchStartCapture={handleChipTouchStart}
+                    onTouchMoveCapture={handleChipTouchMove}
+                    onTouchEndCapture={handleChipTouchEnd}
+                    onTouchCancelCapture={handleChipTouchEnd}
+                    style={{
+                      WebkitOverflowScrolling: 'touch',
+                      touchAction: 'pan-x',
+                      overscrollBehaviorX: 'contain',
+                      // Keeps capsule ends off the scroll clip rect so squircles aren’t sheared flat on screen edges.
+                      scrollPaddingInline: '10px',
+                    }}
+                  >
+                    <div className="flex w-max gap-[6px] px-[24px]">
+                      {projectsWithMedia.map((project) => (
+                        <ProjectChip
+                          key={project.id}
+                          label={project.name}
+                          isActive={activeProject === project.id}
+                          onClick={() => handleChipClick(project.id)}
+                          ref={(el) => chipRefs.current[project.id] = el}
+                          onClickCapture={handleChipClickCapture}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  {/* 1px rule without `border: solid transparent` — iOS WebKit often paints that as a grey hairline. */}
+                  <div
+                    aria-hidden
+                    className="pointer-events-none -mx-[24px] h-px w-auto shrink-0"
+                    style={{
+                      backgroundColor: mobilePinnedRuleVisible ? 'rgb(18 17 17 / 0.03)' : '#ffffff',
+                    }}
+                  />
+                </motion.div>
+
+                {/* Vertical Stack of Cards */}
+                <motion.div variants={MOBILE_SHELL_STAGGER_CHILD}>
+                  <AnimatePresence mode="wait" onExitComplete={handleMobileContentExitComplete}>
+                    <motion.div
+                      ref={mobileStackRef}
+                      key={activeProject}
+                      initial={
+                        !isMobile || mobileProjectOpacitySwapEnabled ? { opacity: 0 } : false
+                      }
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: isMobile ? 0.16 : 0.25, ease: 'easeInOut' }}
+                      className="mb-[8px] mt-[10px] flex flex-col gap-[24px]"
+                    >
+                      <IntroCard
+                        {...currentProject.introCard}
+                        railWidthScale={desktopLyftRailScale}
+                      />
+                      {currentProject.id === 'sutter-hill' ? (
+                        <SutterHillLogoGrid />
+                      ) : (
+                        currentProject.cards.map((card, index) => (
+                          <ProjectCard
+                            key={index}
+                            {...card}
+                            desktopRailWidthScale={desktopLyftRailScale ?? 1}
+                          />
+                        ))
+                      )}
+                    </motion.div>
+                  </AnimatePresence>
+                </motion.div>
               </motion.div>
-            </AnimatePresence>
-          </motion.div>
+            ) : (
+              <motion.div
+                key="mobile-writing"
+                initial={{ opacity: 0, filter: 'blur(10px)' }}
+                animate={{ opacity: 1, filter: 'blur(0px)' }}
+                exit={{ opacity: 0, filter: 'blur(8px)' }}
+                transition={{ duration: 0.24, ease: [0.23, 1, 0.32, 1] }}
+              >
+                <WritingPage variant="mobile" />
+              </motion.div>
+            )}
+          </AnimatePresence>
           </motion.div>
           </div>
         </div>
