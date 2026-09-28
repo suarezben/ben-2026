@@ -116,7 +116,7 @@ export function IntroNameHeading({
   const introTextOccupiesLayout = isWriting
     ? signaturePhase !== 'writing'
     : showIntroText;
-  const writingY = isMobile ? motionSettings.mobileY : motionSettings.desktopY;
+  const writingY = isMobile ? motionSettings.mobileY - 16 : motionSettings.desktopY;
   const writingScale = isMobile
     ? motionSettings.mobileScale
     : motionSettings.desktopScale;
@@ -141,7 +141,9 @@ export function IntroNameHeading({
     <div
       className={
         isMobile
-          ? 'flex items-center justify-between gap-0'
+          ? isWriting
+            ? 'relative flex h-[72px] items-center justify-between gap-0'
+            : 'flex items-center justify-between gap-0'
           : 'flex items-center justify-between gap-4'
       }
     >
@@ -149,7 +151,7 @@ export function IntroNameHeading({
         className={
           isMobile
             ? isWriting
-              ? 'flex h-11 min-w-0 flex-1 items-center'
+              ? 'flex h-full min-w-0 flex-1 items-center'
               : 'h-[104px] min-w-0 flex-1'
             : 'h-[52px] min-w-0 flex-1 lg:h-[64px] xl:h-[79px]'
         }
@@ -235,7 +237,9 @@ export function IntroNameHeading({
         aria-label="Primary"
         className={
           isMobile
-            ? 'flex w-[92px] -translate-y-[22px] shrink-0 flex-col items-end justify-center gap-3 text-[22px] font-light leading-[1.08] tracking-[-0.99px] text-site-ink/70'
+            ? isWriting
+              ? 'absolute right-0 top-[-22px] flex w-[92px] shrink-0 flex-col items-end justify-center gap-3 text-[22px] font-light leading-[1.08] tracking-[-0.99px] text-site-ink/70'
+              : 'flex w-[92px] -translate-y-[22px] shrink-0 flex-col items-end justify-center gap-3 text-[22px] font-light leading-[1.08] tracking-[-0.99px] text-site-ink/70'
             : 'ml-6 flex shrink-0 items-center gap-[1.35em] text-[16px] text-site-ink/70 lg:text-[20px] xl:text-[24px]'
         }
       >

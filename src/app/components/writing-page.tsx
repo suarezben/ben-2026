@@ -5,14 +5,28 @@ const ARTICLE_PATH = `${import.meta.env.BASE_URL}writing/site-codex/index.html`;
 type WritingPageProps = {
   variant: 'desktop' | 'mobile';
   onHeaderVisibilityChange: (visible: boolean) => void;
+  onHeaderDividerChange: (visible: boolean) => void;
   onLightboxProgressChange: (progress: number) => void;
 };
 
 type LightboxProgressEvent = CustomEvent<{ progress?: number }>;
 
+const CURSOR_INTERACTIVE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[contenteditable="true"]',
+  '[tabindex]:not([tabindex="-1"])',
+  '[role="button"]',
+  '[data-lightbox]',
+].join(',');
+
 export function WritingPage({
   variant,
   onHeaderVisibilityChange,
+  onHeaderDividerChange,
   onLightboxProgressChange,
 }: WritingPageProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -22,9 +36,10 @@ export function WritingPage({
 
   useEffect(() => {
     onHeaderVisibilityChange(true);
+    onHeaderDividerChange(false);
     onLightboxProgressChange(0);
     return () => cleanupRef.current?.();
-  }, [onHeaderVisibilityChange, onLightboxProgressChange]);
+  }, [onHeaderDividerChange, onHeaderVisibilityChange, onLightboxProgressChange]);
 
   useEffect(() => {
     const header = document.querySelector<HTMLElement>(`[data-writing-header="${variant}"]`);
@@ -47,23 +62,66 @@ export function WritingPage({
 
     let lastScrollY = frameWindow.scrollY;
     let headerVisible = true;
+    let headerDividerVisible = false;
     const setHeaderVisible = (visible: boolean) => {
       if (visible === headerVisible) return;
       headerVisible = visible;
       onHeaderVisibilityChange(visible);
     };
+    const setHeaderDividerVisible = (visible: boolean) => {
+      if (visible === headerDividerVisible) return;
+      headerDividerVisible = visible;
+      onHeaderDividerChange(visible);
+    };
     const onScroll = () => {
       const nextY = frameWindow.scrollY;
-      if (nextY <= 24) setHeaderVisible(true);
-      else if (nextY > lastScrollY + 3) setHeaderVisible(false);
-      else if (nextY < lastScrollY - 3) setHeaderVisible(true);
+      if (nextY <= 24) {
+        setHeaderVisible(true);
+        setHeaderDividerVisible(false);
+      } else if (nextY > lastScrollY + 3) {
+        setHeaderVisible(false);
+        setHeaderDividerVisible(false);
+      } else if (nextY < lastScrollY - 3) {
+        setHeaderVisible(true);
+        setHeaderDividerVisible(true);
+      }
       lastScrollY = nextY;
     };
-    const onPointerMove = (event: MouseEvent) => {
+    const isInteractive = (target: EventTarget | null) => {
+      const element = target as (EventTarget & { closest?: (selector: string) => Element | null }) | null;
+      return typeof element?.closest === 'function' &&
+        Boolean(element.closest(CURSOR_INTERACTIVE_SELECTOR));
+    };
+    const onPointerMove = (event: PointerEvent) => {
       const rect = iframe.getBoundingClientRect();
       window.dispatchEvent(new CustomEvent('writing-cursor-move', {
-        detail: { clientX: rect.left + event.clientX, clientY: rect.top + event.clientY },
+        detail: {
+          clientX: rect.left + event.clientX,
+          clientY: rect.top + event.clientY,
+          hovered: isInteractive(event.target),
+        },
       }));
+    };
+    const forwardCursorState = (detail: {
+      hovered?: boolean;
+      pressed?: boolean;
+      visible?: boolean;
+    }) => window.dispatchEvent(new CustomEvent('writing-cursor-state', { detail }));
+    const onPointerOver = (event: PointerEvent) => {
+      forwardCursorState({ hovered: isInteractive(event.target), visible: true });
+    };
+    const onPointerOut = (event: PointerEvent) => {
+      forwardCursorState({
+        hovered: isInteractive(event.relatedTarget),
+        visible: event.relatedTarget !== null,
+      });
+    };
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.isPrimary && event.button === 0) forwardCursorState({ pressed: true });
+    };
+    const releaseCursor = () => forwardCursorState({ pressed: false });
+    const leaveArticle = () => {
+      forwardCursorState({ hovered: false, pressed: false, visible: false });
     };
     const onLightboxProgress = (event: Event) => {
       const progress = (event as LightboxProgressEvent).detail?.progress ?? 0;
@@ -75,18 +133,6 @@ export function WritingPage({
       const articleColumn = frameDocument.querySelector<HTMLElement>('.column');
       const hostHeader = document.querySelector<HTMLElement>(`[data-writing-header="${variant}"]`);
       if (!articleColumn || !hostHeader) return;
-
-      if (isMobile) {
-        // The mobile header overlays the iframe so it can slide away without
-        // leaving a fixed-height hole. Reserve its untransformed height inside
-        // the article instead; offsetHeight stays stable while Motion moves it.
-        articleColumn.style.setProperty(
-          'padding-top',
-          `${hostHeader.offsetHeight + 24}px`,
-          'important'
-        );
-        return;
-      }
 
       const iframeTop = iframe.getBoundingClientRect().top;
       const headerBottom = hostHeader.getBoundingClientRect().bottom;
@@ -103,7 +149,14 @@ export function WritingPage({
     window.addEventListener('resize', scheduleHostHeaderInset);
 
     frameWindow.addEventListener('scroll', onScroll, { passive: true });
-    frameDocument.addEventListener('mousemove', onPointerMove, { passive: true });
+    frameDocument.addEventListener('pointermove', onPointerMove, { passive: true });
+    frameDocument.addEventListener('pointerover', onPointerOver, { passive: true });
+    frameDocument.addEventListener('pointerout', onPointerOut, { passive: true });
+    frameDocument.addEventListener('pointerdown', onPointerDown, { passive: true });
+    frameDocument.addEventListener('pointerup', releaseCursor, { passive: true });
+    frameDocument.addEventListener('pointercancel', releaseCursor, { passive: true });
+    frameDocument.addEventListener('mouseleave', leaveArticle);
+    frameWindow.addEventListener('blur', releaseCursor);
     frameDocument.addEventListener('lightboxprogress', onLightboxProgress);
     frameDocument.addEventListener('lightboxclose', onLightboxClose);
     applyHostHeaderInset();
@@ -114,7 +167,14 @@ export function WritingPage({
       resizeObserver.disconnect();
       window.removeEventListener('resize', scheduleHostHeaderInset);
       frameWindow.removeEventListener('scroll', onScroll);
-      frameDocument.removeEventListener('mousemove', onPointerMove);
+      frameDocument.removeEventListener('pointermove', onPointerMove);
+      frameDocument.removeEventListener('pointerover', onPointerOver);
+      frameDocument.removeEventListener('pointerout', onPointerOut);
+      frameDocument.removeEventListener('pointerdown', onPointerDown);
+      frameDocument.removeEventListener('pointerup', releaseCursor);
+      frameDocument.removeEventListener('pointercancel', releaseCursor);
+      frameDocument.removeEventListener('mouseleave', leaveArticle);
+      frameWindow.removeEventListener('blur', releaseCursor);
       frameDocument.removeEventListener('lightboxprogress', onLightboxProgress);
       frameDocument.removeEventListener('lightboxclose', onLightboxClose);
     };
@@ -132,7 +192,7 @@ export function WritingPage({
       <iframe
         ref={iframeRef}
         src={`${ARTICLE_PATH}?embedded=${variant}`}
-        title="AI helped me build something I thought was worthy of printing for the first time in years."
+        title="AI helped me build something I actually wanted to print."
         className="block h-full w-full border-0 bg-white"
         allow="autoplay; fullscreen"
         onLoad={(event) => connectArticle(event.currentTarget)}

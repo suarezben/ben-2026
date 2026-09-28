@@ -171,7 +171,17 @@ const geometry = new ResizeObserver(entries => {
 function smooth(el, width, height) {
   const smoothBareCard=el.classList.contains('iteration-card');
   if ((el.classList.contains('media--bare')&&!smoothBareCard) || !width || !height) return;
-  const radius = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0;
+  const radiusValue=getComputedStyle(el).borderTopLeftRadius;
+  const [horizontalRadius,verticalRadius=horizontalRadius]=radiusValue.split(/\s+/);
+  const resolveRadius=(value,axisLength)=> {
+    const amount=parseFloat(value)||0;
+    return value.endsWith('%')?axisLength*amount/100:amount;
+  };
+  // Computed percentage radii remain percentages. parseFloat("12.25%") was
+  // treating the carousel's intended ~24px corner as 12.25px, and the custom
+  // clip path then overrode the correct CSS radius. The horizontal and vertical
+  // percentages are tuned to resolve to the same physical radius.
+  const radius=(resolveRadius(horizontalRadius,width)+resolveRadius(verticalRadius,height))/2;
   const path = getSvgPath({width, height, cornerRadius: radius, cornerSmoothing: .75, preserveSmoothing: true});
   el.style.clipPath = `path('${path}')`;
   if(el.matches('.media')) {
@@ -204,25 +214,65 @@ function smooth(el, width, height) {
 }
 document.querySelectorAll('.media, .card-video, .tldr').forEach(el => geometry.observe(el));
 
-// Load and loop only videos near the viewport. Moving the original DOM node into
-// the lightbox preserves its time; it does not create a second playing decoder.
+// Load and loop only videos near the viewport. Every clip has a first-frame
+// poster, so slow networks and decoder restarts never expose an empty container.
+// Moving the original DOM node into the lightbox preserves its time; it does not
+// create a second playing decoder.
 const visibleVideos = new Set();
+const videoRetryTimers = new WeakMap();
+const videoRetryCounts = new WeakMap();
+const clearVideoRetry = video => {
+  const timer=videoRetryTimers.get(video);
+  if(timer) clearTimeout(timer);
+  videoRetryTimers.delete(video);
+};
+const retryVideo = (video, delay) => {
+  if(!visibleVideos.has(video)||videoRetryTimers.has(video)) return;
+  const retries=videoRetryCounts.get(video)||0;
+  if(retries>=2) return;
+  videoRetryCounts.set(video,retries+1);
+  const timer=setTimeout(()=> {
+    videoRetryTimers.delete(video);
+    if(!document.hidden&&visibleVideos.has(video)) {
+      if(video.error||video.readyState<3) video.load();
+      playVideo(video);
+    }
+  },delay);
+  videoRetryTimers.set(video,timer);
+};
+const playVideo = video => {
+  if(document.hidden||!visibleVideos.has(video)) return;
+  clearVideoRetry(video);
+  video.muted=true;
+  video.preload='auto';
+  video.play().catch(error=> {
+    if(error?.name==='AbortError'||error?.name==='NotAllowedError') return;
+    retryVideo(video,1500);
+  });
+};
 const videoObserver = new IntersectionObserver(entries => {
   for (const {target: video, isIntersecting} of entries) {
     if (isIntersecting) visibleVideos.add(video); else visibleVideos.delete(video);
-    if (isIntersecting && !document.hidden) { video.muted = true; video.play().catch(() => {}); }
-    else video.pause();
+    if (isIntersecting && !document.hidden) playVideo(video);
+    else { clearVideoRetry(video); video.pause(); }
   }
 }, {rootMargin: '160px 0px'});
 document.querySelectorAll('video').forEach(video => {
   video.muted = true; video.loop = true; video.playsInline = true;
   video.disablePictureInPicture = true; video.controls = false;
+  video.addEventListener('playing',()=> {
+    clearVideoRetry(video);
+    videoRetryCounts.set(video,0);
+  });
+  video.addEventListener('canplay',()=>playVideo(video));
+  video.addEventListener('stalled',()=>retryVideo(video,2500));
+  video.addEventListener('error',()=>retryVideo(video,1500));
   videoObserver.observe(video);
 });
 document.addEventListener('visibilitychange', () => {
   document.querySelectorAll('video').forEach(video => {
     if (document.hidden) video.pause();
-    else if (visibleVideos.has(video)) video.play().catch(() => {});
+    else if (visibleVideos.has(video)) playVideo(video);
   });
 });
 
@@ -423,8 +473,12 @@ const lightbox = (() => {
     slides=items.map((item,i)=> {
       const o=origins[i], placeholder=document.createElement('div');
       placeholder.className='lb-placeholder';
-      const maxWidth=item.classList.contains('media--hero')?900:item.classList.contains('media--phone')?287:item.classList.contains('phone')?o.w:600;
-      placeholder.style.width=`min(${maxWidth}px, calc(100vw - 40px))`;
+      const isHero=item.classList.contains('media--hero');
+      if(isHero) placeholder.classList.add('lb-placeholder--hero');
+      else {
+        const maxWidth=item.classList.contains('media--phone')?287:item.classList.contains('phone')?o.w:600;
+        placeholder.style.width=`min(${maxWidth}px, calc(100vw - 40px))`;
+      }
       placeholder.style.aspectRatio=`${o.w}/${o.h}`;
       item.before(placeholder);
       const wrap=document.createElement('div'); wrap.className='lb-slide';

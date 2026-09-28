@@ -312,6 +312,14 @@ const CAROUSEL_RUBBER_SPRING = {
   mass: 0.58,
 };
 
+/** Writing header: fluid, interruptible hide/reveal when scroll direction changes. */
+const WRITING_HEADER_SCROLL_SPRING = {
+  type: 'spring' as const,
+  stiffness: 190,
+  damping: 28,
+  mass: 0.82,
+};
+
 /** Same px as `mobileChipsPinned` — site intro bottom in doc space minus this = minimum scroll Y while pinned. */
 const MOBILE_SITE_INTRO_PIN_PX = 2;
 
@@ -493,11 +501,13 @@ export default function App() {
   const [activeProject, setActiveProject] = useState('meta');
   const [siteView, setSiteView] = useState<SiteView>(siteViewFromLocation);
   const [writingHeaderVisible, setWritingHeaderVisible] = useState(true);
+  const [writingHeaderDividerVisible, setWritingHeaderDividerVisible] = useState(false);
   const [writingLightboxProgress, setWritingLightboxProgress] = useState(0);
   const writingLightboxVisible = writingLightboxProgress > 0.001;
   useEffect(() => {
     if (siteView === 'writing') {
       setWritingHeaderVisible(true);
+      setWritingHeaderDividerVisible(false);
     } else {
       setWritingLightboxProgress(0);
     }
@@ -709,13 +719,21 @@ export default function App() {
   useEffect(() => {
     const handleMouseDown = () => setIsPressed(true);
     const handleMouseUp = () => setIsPressed(false);
+    const handleWritingCursorState = (event: Event) => {
+      const pressed = (event as CustomEvent<{ pressed?: boolean }>).detail?.pressed;
+      if (typeof pressed === 'boolean') setIsPressed(pressed);
+    };
 
     window.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('blur', handleMouseUp);
+    window.addEventListener('writing-cursor-state', handleWritingCursorState);
 
     return () => {
       window.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('blur', handleMouseUp);
+      window.removeEventListener('writing-cursor-state', handleWritingCursorState);
     };
   }, []);
 
@@ -1448,28 +1466,33 @@ export default function App() {
             data-writing-header="desktop"
             animate={{
               y: siteView === 'writing' && !writingHeaderVisible ? -160 : 0,
-              scale: 1 - 0.04 * writingLightboxProgress,
-              filter: `blur(${16 * writingLightboxProgress}px) saturate(${100 + 40 * writingLightboxProgress}%) brightness(${100 - 18 * writingLightboxProgress}%)`,
-              backgroundColor: writingLightboxVisible
-                ? `rgba(0,0,0,${0.1 * writingLightboxProgress})`
-                : '#fff',
+              opacity:
+                siteView === 'writing' ? Math.max(0, 1 - writingLightboxProgress) : 1,
+              filter:
+                siteView === 'writing'
+                  ? `blur(${16 * writingLightboxProgress}px) saturate(${100 + 40 * writingLightboxProgress}%) brightness(${100 - 18 * writingLightboxProgress}%)`
+                  : 'none',
             }}
             transition={{
-              y: { duration: 0.22, ease: [0.23, 1, 0.32, 1] },
-              scale: { duration: 0 },
+              y: WRITING_HEADER_SCROLL_SPRING,
+              opacity: { duration: 0 },
               filter: { duration: 0 },
-              backgroundColor: { duration: 0 },
             }}
-            className="relative z-20 shrink-0 pb-[16px] lg:pb-[20px]"
+            className={`relative shrink-0 bg-white pb-[16px] lg:pb-[20px] ${
+              writingLightboxVisible ? 'z-40' : 'z-20'
+            }`}
             style={{
               pointerEvents: writingLightboxVisible ? 'none' : undefined,
-              transformOrigin: 'center top',
               boxShadow:
                 siteView === 'writing' && writingLightboxVisible
                   ? 'none'
                   : siteView === 'writing'
-                    ? '0 -48px 0 0 #fff, inset 0 -1px 0 rgb(19 16 21 / 0.03)'
-                  : '0 -48px 0 0 #fff',
+                    ? `0 -48px 0 0 #fff${
+                        writingHeaderDividerVisible
+                          ? ', inset 0 -1px 0 rgb(19 16 21 / 0.03)'
+                          : ''
+                      }`
+                    : '0 -48px 0 0 #fff',
             }}
           >
             <div className="font-['Alliance_No.1',sans-serif] font-light leading-[normal] not-italic text-[20px] lg:text-[25px] xl:text-[30px] text-site-ink tracking-[-1px] lg:tracking-[-1.21px] xl:tracking-[-1.46px] mb-[16px] lg:mb-[20px]">
@@ -1508,7 +1531,13 @@ export default function App() {
             </AnimatePresence>
           </motion.div>
 
-          <div className={siteView === 'writing' ? 'absolute inset-0 min-h-0' : ''}>
+          <div
+            className={
+              siteView === 'writing'
+                ? `absolute inset-0 min-h-0 ${writingLightboxVisible ? 'z-30' : 'z-0'}`
+                : ''
+            }
+          >
           <AnimatePresence initial={false} mode="wait">
             {siteView === 'work' ? (
               <motion.div
@@ -1545,11 +1574,14 @@ export default function App() {
                 transition={{ duration: 0.24, ease: [0.23, 1, 0.32, 1] }}
                 className="h-full min-h-0"
               >
-                <WritingPage
-                  variant="desktop"
-                  onHeaderVisibilityChange={setWritingHeaderVisible}
-                  onLightboxProgressChange={setWritingLightboxProgress}
-                />
+                {!isMobile && (
+                  <WritingPage
+                    variant="desktop"
+                    onHeaderVisibilityChange={setWritingHeaderVisible}
+                    onHeaderDividerChange={setWritingHeaderDividerVisible}
+                    onLightboxProgressChange={setWritingLightboxProgress}
+                  />
+                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -1588,32 +1620,37 @@ export default function App() {
             data-writing-header="mobile"
             animate={{
               y: siteView === 'writing' && !writingHeaderVisible ? -120 : 0,
-              scale: 1 - 0.04 * writingLightboxProgress,
-              filter: `blur(${16 * writingLightboxProgress}px) saturate(${100 + 40 * writingLightboxProgress}%) brightness(${100 - 18 * writingLightboxProgress}%)`,
-              backgroundColor: writingLightboxVisible
-                ? `rgba(0,0,0,${0.1 * writingLightboxProgress})`
-                : '#fff',
+              opacity:
+                siteView === 'writing' ? Math.max(0, 1 - writingLightboxProgress) : 1,
+              filter:
+                siteView === 'writing'
+                  ? `blur(${16 * writingLightboxProgress}px) saturate(${100 + 40 * writingLightboxProgress}%) brightness(${100 - 18 * writingLightboxProgress}%)`
+                  : 'none',
             }}
             transition={{
-              y: { duration: 0.22, ease: [0.23, 1, 0.32, 1] },
-              scale: { duration: 0 },
+              y: WRITING_HEADER_SCROLL_SPRING,
+              opacity: { duration: 0 },
               filter: { duration: 0 },
-              backgroundColor: { duration: 0 },
             }}
             className={
-              siteView === 'writing'
-                ? 'absolute left-0 right-0 top-[16px] z-20 shrink-0 bg-white px-[24px] pb-[12px]'
+                siteView === 'writing'
+                ? `absolute left-0 right-0 top-[16px] shrink-0 bg-white px-[24px] pb-[12px] ${
+                    writingLightboxVisible ? 'z-40' : 'z-20'
+                  }`
                 : 'relative z-20 shrink-0 pb-[28px]'
             }
             style={{
               pointerEvents: writingLightboxVisible ? 'none' : undefined,
-              transformOrigin: 'center top',
               boxShadow:
                 siteView === 'writing' && writingLightboxVisible
                   ? 'none'
                   : siteView === 'writing'
-                    ? '0 -48px 0 0 #fff, inset 0 -1px 0 rgb(19 16 21 / 0.03)'
-                  : '0 -48px 0 0 #fff',
+                    ? `0 -48px 0 0 #fff${
+                        writingHeaderDividerVisible
+                          ? ', inset 0 -1px 0 rgb(19 16 21 / 0.12)'
+                          : ''
+                      }`
+                    : '0 -48px 0 0 #fff',
             }}
           >
             <motion.div
@@ -1740,16 +1777,17 @@ export default function App() {
                 exit={{ opacity: 0, filter: 'blur(8px)' }}
                 transition={{ duration: 0.24, ease: [0.23, 1, 0.32, 1] }}
                 className={
-                  writingLightboxVisible
-                    ? 'absolute inset-0 z-10 min-h-0'
-                    : 'relative -mx-[24px] min-h-0 flex-1'
+                  `absolute inset-0 min-h-0 ${writingLightboxVisible ? 'z-30' : 'z-10'}`
                 }
               >
-                <WritingPage
-                  variant="mobile"
-                  onHeaderVisibilityChange={setWritingHeaderVisible}
-                  onLightboxProgressChange={setWritingLightboxProgress}
-                />
+                {isMobile && (
+                  <WritingPage
+                    variant="mobile"
+                    onHeaderVisibilityChange={setWritingHeaderVisible}
+                    onHeaderDividerChange={setWritingHeaderDividerVisible}
+                    onLightboxProgressChange={setWritingLightboxProgress}
+                  />
+                )}
               </motion.div>
             )}
           </AnimatePresence>

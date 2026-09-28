@@ -158,7 +158,7 @@ html.lightbox-scroll-lock body::-webkit-scrollbar {
 /* The portfolio shell owns the space above an embedded article. Set this
    before first paint so mobile never renders behind the host header and then
    jumps when React finishes measuring it. */
-html[data-embedded="mobile"] .column { padding-top: 152px; }
+html[data-embedded="mobile"] .column { padding-top: 124px; }
 html[data-embedded="desktop"] .column { padding-top: 153px; }
 @media (min-width: 1024px) {
   html[data-embedded="desktop"] .column { padding-top: 179px; }
@@ -668,10 +668,6 @@ figcaption {
 }
 .lb-slide { transform-origin: 0 0; will-change: transform; }
 .lb-slide .media { max-width: none; }
-/* Several source videos include a dark capture fringe in their outermost
-   pixels. Hide that baked-in edge behind the modal clip without scaling the
-   SVG hairline, which remains a true non-scaling 1px stroke. */
-.lb-slide .media.in-lb > video { transform: scale(1.03); }
 .lb-placeholder { pointer-events: none; }
 .lb-nav, .lb-close, .lb-download {
   border: 1px solid rgba(255,255,255,.22); color: #fff;
@@ -765,6 +761,13 @@ html[data-embedded="mobile"] .media--hero {
   width: min(600px, calc(100vw - 48px));
 }
 html[data-embedded="desktop"] .media--hero {
+  width: min(900px, calc(100vw - 118px));
+}
+.lb-placeholder--hero { width: var(--hero-w); }
+html[data-embedded="mobile"] .lb-placeholder--hero {
+  width: min(600px, calc(100vw - 48px));
+}
+html[data-embedded="desktop"] .lb-placeholder--hero {
   width: min(900px, calc(100vw - 118px));
 }
 .media-inner--acrylic { display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 20px; padding: 30px 40px; }
