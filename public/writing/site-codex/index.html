@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<meta name="build-id" content="v17-group-rubber-band">
+<title>AI helped me make something pretty enough to print</title>
+<meta name="description" content="Experiments with liquid acrylic shaders, playful physics, and a canvas of emotions.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=41-public-release">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%279%27 fill=%27%23efe5d6%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%278%27 fill=%27%23b072dc%27/%3E%3C/svg%3E">
+</head>
+<body>
+<div id="page">
+<main class="column">
+
+  <!-- HERO -->
+  <figure class="media-block media-block--hero">
+    <div class="media media--hero" data-lightbox>
+      <img class="hero-image" src="Assets/figma/hero-original.png" alt="Printed watercolor phone designs laid out on a rug" fetchpriority="high">
+    </div>
+  </figure>
+
+  <header class="post-header">
+    <h1 class="title">AI helped me make something I thought was pretty enough to print for the first time in years.</h1>
+    <p class="date">September 29, 2026</p>
+  </header>
+
+  <aside class="tldr">
+    <p>TL;DR: I used AI to make a liquid acrylic shader. It made me less disgruntled about the current state of tech, and it felt nice to actually make something I found pretty.</p>
+  </aside>
+
+  <h2 class="section-title">Part 1</h2>
+
+  <div class="body">
+    <p>I was never inherently interested in technology or computers as a kid, unlike many people I’ve worked with in tech, who talk about building computers, writing software when they were young, etc.</p>
+    <p>However, like many designers in tech, I went to school for graphic design. Computers were mostly just a means to an end for me, a way to make stuff I thought looked cool that I otherwise couldn’t do by hand.</p>
+    <p>Design attracted me because I wanted to make things that were visually interesting, beautiful, and that elicited strong feelings or emotions in people. There are opportunities to do this designing software, for sure, but they had felt few and far between for me lately.</p>
+    <p>Shaders have always been something I was interested in, but I never took the time to learn much about them. With this new technology at my disposal, it felt like a good time to try them out.</p>
+    <p>I’d been working on trying to make art for my living room, without much success, using watered-down liquid acrylic that soaks into a wet canvas. I was inspired by the work a previous colleague of mine does and tried to replicate a version of it.</p>
+  </div>
+
+  <figure class="media-block">
+    <div class="media media--static" style="aspect-ratio: 4/3" data-lightbox>
+      <img src="Assets/backyard-artwork.jpg" alt="Backyard artwork" loading="lazy">
+    </div>
+    <figcaption>Backyard artwork</figcaption>
+  </figure>
+
+  <div class="body">
+    <p>I thought this would be a fun thing to try to create digitally and an opportunity to play with Apple’s Metal for the first time.</p>
+    <p>My first pass was creating a canvas that simulated liquid acrylic ink on a wet surface and reacted to device orientation using the gyroscope.</p>
+  </div>
+
+  <figure class="media-block">
+    <div class="media" style="aspect-ratio: 600/750" data-lightbox>
+      <video src="Assets/video/step1_take02.mp4" muted loop playsinline preload="metadata"></video>
+    </div>
+    <figcaption>First pass of my liquid acrylic simulation</figcaption>
+  </figure>
+
+  <figure class="media-block">
+    <div class="media-row" data-group>
+      <div class="media" style="aspect-ratio: 600/750" data-lightbox>
+        <video src="Assets/video/step1_take03.mp4" muted loop playsinline preload="metadata"></video>
+      </div>
+      <div class="media" style="aspect-ratio: 600/750" data-lightbox>
+        <video src="Assets/video/step1_take05.mp4" muted loop playsinline preload="metadata"></video>
+      </div>
+    </div>
+    <figcaption>It’s really satisfying to have it pool at the edge and then fall down a bunch.</figcaption>
+  </figure>
+
+  <figure class="media-block media-block--carousel">
+    <div class="carousel iteration-carousel" data-carousel>
+      <div class="carousel-track">
+        <div class="phone iteration-card media media--bare" data-lightbox><img class="iteration-image" src="Assets/iterations-hq/iteration-07.webp" alt="Burgundy and peach liquid acrylic iteration" loading="lazy"></div>
+        <div class="phone iteration-card media media--bare" data-lightbox><img class="iteration-image" src="Assets/iterations-hq/iteration-02.webp" alt="Navy and pale blue liquid acrylic iteration" loading="lazy"></div>
+        <div class="phone iteration-card media media--bare" data-lightbox><img class="iteration-image" src="Assets/iterations-hq/iteration-09.webp" alt="Rose and yellow liquid acrylic iteration" loading="lazy"></div>
+        <div class="phone iteration-card media media--bare" data-lightbox><img class="iteration-image" src="Assets/iterations-hq/iteration-04.webp" alt="Plum and olive liquid acrylic iteration" loading="lazy"></div>
+        <div class="phone iteration-card media media--bare" data-lightbox><img class="iteration-image" src="Assets/iterations-hq/iteration-01.webp" alt="Burgundy liquid acrylic iteration" loading="lazy"></div>
+        <div class="phone iteration-card media media--bare" data-lightbox><img class="iteration-image" src="Assets/iterations-hq/iteration-08.webp" alt="Soft pink liquid acrylic iteration" loading="lazy"></div>
+        <div class="phone iteration-card media media--bare" data-lightbox><img class="iteration-image" src="Assets/iterations-hq/iteration-03.webp" alt="Indigo liquid acrylic iteration" loading="lazy"></div>
+        <div class="phone iteration-card media media--bare" data-lightbox><img class="iteration-image" src="Assets/iterations-hq/iteration-06.webp" alt="Sepia liquid acrylic iteration" loading="lazy"></div>
+        <div class="phone iteration-card media media--bare" data-lightbox><img class="iteration-image" src="Assets/iterations-hq/iteration-05.webp" alt="Mauve and lavender liquid acrylic iteration" loading="lazy"></div>
+      </div>
+    </div>
+    <figcaption>Seeing the iterations laid out was satisfying.</figcaption>
+  </figure>
+
+  <figure class="media-block">
+    <div class="media-row" data-group>
+      <div class="media" style="aspect-ratio: 600/750" data-lightbox>
+        <video src="Assets/video/step1_take06.mp4" muted loop playsinline preload="metadata"></video>
+      </div>
+      <div class="media" style="aspect-ratio: 600/750" data-lightbox>
+        <video src="Assets/video/step1_take07.mp4" muted loop playsinline preload="metadata"></video>
+      </div>
+    </div>
+    <figcaption>Tilt it fast enough and the front of the ink breaks into fingers.</figcaption>
+  </figure>
+
+  <div class="body">
+    <p>One effect I really like is what happens when the ink has a lot of momentum. The front edge can’t stay smooth, because any spot on the edge that’s a little thicker flows a little faster, pulls ahead of the ink around it, and keeps pulling away until the edge splits into these “fingers”. I later learned the actual name for this phenomenon is indeed “fingering instability”.</p>
+    <p>I had a lot of fun tweaking the feel and figuring out what the abstractions should be:</p>
+    <ul>
+      <li><em>How wet the paint is</em></li>
+      <li><em>How fast a fresh wash spreads</em></li>
+      <li><em>How quickly it dries into stains and tide lines</em></li>
+      <li><em>How hard it leans into a tilt, and how long it takes to notice one</em></li>
+      <li><em>How much pigment piles up in the dark line at a wash’s leading edge</em></li>
+    </ul>
+    <p>Most of the work was figuring out how all those values played off each other. Underneath, the paint is really two layers, a wet film and a dried stain, and drying moves pigment from one into the other. Rehydration runs that backwards: re-wet a patch and the dried stain dissolves back into the film, so old marks wake up and move again.</p>
+  </div>
+
+  <figure class="media-block">
+    <div class="media" style="aspect-ratio: 600/750" data-lightbox>
+      <video src="Assets/video/step1_take10.mp4" muted loop playsinline preload="metadata"></video>
+    </div>
+    <figcaption>A lil faster and more responsive</figcaption>
+  </figure>
+
+  <div class="body">
+    <p>This thing was very fun to play with. I found myself, when bored or waiting in line or something, just opening it up and playing with the ink, trying to make new patterns and stains.</p>
+  </div>
+
+  <h2 class="section-title">Part 2</h2>
+
+  <div class="body">
+    <p>Could this have a practical application as a UI material? I’d been noodling on a few mental-health-focused apps, which was a bit of the inspiration for this particular look and feel.</p>
+    <p>Cards seemed like a plausible application.</p>
+  </div>
+
+  <!-- Part 2 card 1: both session variants, treated as ONE media -->
+  <figure class="media-block">
+    <div class="media media--fixed media--card media--card-grid" style="aspect-ratio: 600/352" data-lightbox data-w="600" data-h="352">
+      <div class="media-inner">
+        <div class="card-video"><video src="Assets/video/card-orchid-session.mp4" muted loop playsinline preload="metadata"></video></div>
+        <div class="card-video"><video src="Assets/video/card-harbor-session.mp4" muted loop playsinline preload="metadata"></video></div>
+      </div>
+    </div>
+    <figcaption>Dynamically content-aware to ensure legibility</figcaption>
+  </figure>
+
+  <div class="body">
+    <p>I liked that the app felt <em>alive</em>. Like my actions, or lack of action, left an impression on it.</p>
+    <ul>
+      <li><em>Was I lying down with my phone and seeing the ink drip more aggressively?</em></li>
+      <li><em>Did I hold it in place for a while, taking my time to read something and feeling it soak in and leave stains and <a href="https://en.wikipedia.org/wiki/Coffee_ring_effect" target="_blank" rel="noopener noreferrer">tide lines</a>?</em></li>
+    </ul>
+  </div>
+
+  <!-- Part 2 card 2: both streak variants, treated as ONE media -->
+  <figure class="media-block">
+    <div class="media media--fixed media--card media--tan" style="aspect-ratio: 600/352" data-lightbox data-w="600" data-h="352">
+      <div class="media-inner">
+        <div class="card-video"><video src="Assets/video/card-orchid-streak.mp4" muted loop playsinline preload="metadata"></video></div>
+        <div class="card-video"><video src="Assets/video/card-harbor-streak.mp4" muted loop playsinline preload="metadata"></video></div>
+      </div>
+    </div>
+    <figcaption>Lorem</figcaption>
+  </figure>
+
+  <div class="body">
+    <p>How would I expect the ink to behave with transitions in motion, as if the invisible container holding the ink were being sloshed and shoved around?</p>
+  </div>
+
+  <figure class="media-block">
+    <div class="media-row" data-group>
+      <div class="media" style="aspect-ratio: 600/750" data-lightbox>
+        <video src="Assets/video/step3_take06.mp4" muted loop playsinline preload="metadata"></video>
+      </div>
+      <div class="media" style="aspect-ratio: 600/750" data-lightbox>
+        <video src="Assets/video/step3_take08.mp4" muted loop playsinline preload="metadata"></video>
+      </div>
+    </div>
+    <figcaption>Started with a shape playground</figcaption>
+  </figure>
+
+  <figure class="media-block">
+    <div class="media-row" data-group>
+      <div class="media" style="aspect-ratio: 600/750" data-lightbox>
+        <video src="Assets/video/step3_take05.mp4" muted loop playsinline preload="metadata"></video>
+      </div>
+      <div class="media" style="aspect-ratio: 600/750" data-lightbox>
+        <video src="Assets/video/step3_take03.mp4" muted loop playsinline preload="metadata"></video>
+      </div>
+    </div>
+    <figcaption>Lorem</figcaption>
+  </figure>
+
+  <figure class="media-block">
+    <div class="media-row" data-group>
+      <div class="media" style="aspect-ratio: 600/750" data-lightbox>
+        <video src="Assets/video/step3_take01.mp4" muted loop playsinline preload="metadata"></video>
+      </div>
+      <div class="media" style="aspect-ratio: 600/750" data-lightbox>
+        <video src="Assets/video/step3_take10.mp4" muted loop playsinline preload="metadata"></video>
+      </div>
+    </div>
+    <figcaption>More traditional components</figcaption>
+  </figure>
+
+  <div class="body">
+    <p>I still need to push further on practical application, but I wanted to move on and explore freeing the ink from hard bounds while still using it as the interface material.</p>
+  </div>
+
+  <h2 class="section-title">Part 3</h2>
+
+  <div class="body">
+    <p>I’ve always wanted to design a mood picker app.<br>What if feelings were represented by ink?</p>
+  </div>
+
+  <figure class="media-block">
+    <div class="media media--phone" style="aspect-ratio: 287/623" data-lightbox>
+      <video src="Assets/video/rings-intro.mp4" muted loop playsinline preload="metadata"></video>
+    </div>
+    <figcaption>Ink rings</figcaption>
+  </figure>
+
+  <div class="body">
+    <p>This still felt too contained. I liked the idea of the ink “fireworking.”</p>
+  </div>
+
+  <!-- Simulator screenshots: three images treated as ONE media, transparent background -->
+  <figure class="media-block">
+    <div class="media media--fixed media--bare" style="aspect-ratio: 600/376.3" data-lightbox data-w="600" data-h="376.3">
+      <div class="media-inner media-inner--sims">
+        <img src="Assets/figma/sim-1.png" alt="">
+        <img src="Assets/figma/sim-2.png" alt="">
+        <img src="Assets/figma/sim-3.png" alt="">
+      </div>
+    </div>
+    <figcaption>Lorem</figcaption>
+  </figure>
+
+  <div class="body">
+    <p>I really wanted to push the physics and make the app feel alive and organic.</p>
+  </div>
+
+  <figure class="media-block">
+    <div class="media" style="aspect-ratio: 600/750" data-lightbox>
+      <video src="Assets/video/step2_take08_intro.mp4" muted loop playsinline preload="metadata"></video>
+    </div>
+    <figcaption>Drilling down into sub-feelings</figcaption>
+  </figure>
+
+  <div class="body">
+    <p>I started with traditional buttons and stuff for going in and out of feelings, but it was killing my serene vibes 🧘‍♂️😌.</p>
+    <p>Besides, “Always make it fluidddd.”</p>
+  </div>
+
+  <figure class="media-block">
+    <div class="media-row" data-group>
+      <div class="media" style="aspect-ratio: 600/750" data-lightbox>
+        <video src="Assets/video/step2_take06_back.mp4" muted loop playsinline preload="metadata"></video>
+      </div>
+      <div class="media" style="aspect-ratio: 600/750" data-lightbox>
+        <video src="Assets/video/step2_take03_fluiddd.mp4" muted loop playsinline preload="metadata"></video>
+      </div>
+    </div>
+    <figcaption>Pinch to go back.</figcaption>
+  </figure>
+
+  <div class="body">
+    <p>For something I want to build a habit around, like a mood picker, there was practical value in having something I just found fun to use.</p>
+  </div>
+
+  <figure class="media-block">
+    <div class="media" style="aspect-ratio: 600/750" data-lightbox>
+      <video src="Assets/video/step2_take04_interupt1.mp4" muted loop playsinline preload="metadata"></video>
+    </div>
+    <figcaption>Exploring my moods 🤨</figcaption>
+  </figure>
+
+  <figure class="media-block">
+    <div class="media media--phone media--phone-tan" style="aspect-ratio: 287/623" data-lightbox>
+      <video src="Assets/video/moodpicker-recording.mp4" muted loop playsinline preload="metadata"></video>
+    </div>
+    <figcaption></figcaption>
+  </figure>
+
+  <div class="body">
+    <p>That was the extent of what I built for this one. Figured I’d build out the tracking part later. I wanted to move on to adding bounds to the ink once again.</p>
+  </div>
+
+  <h2 class="section-title">Part 4</h2>
+
+  <div class="body">
+    <p>What if selecting moods slapped ink onto a canvas? I liked the idea of being able to browse a gallery of my past moods.</p>
+  </div>
+
+  <figure class="media-block">
+    <div class="media" style="aspect-ratio: 600/750" data-lightbox>
+      <video src="Assets/video/step4_take02_initialflow_plusscroll_part-1.mp4" muted loop playsinline preload="metadata"></video>
+    </div>
+    <figcaption>One entry, start to finish. Pick the moods, submit, and they land on the canvas as ink.</figcaption>
+  </figure>
+
+  <!-- Looping full-bleed phone carousel -->
+  <figure class="media-block media-block--carousel">
+    <div class="carousel" data-carousel>
+      <div class="carousel-track">
+        <div class="phone iteration-card screen-card media media--bare" data-lightbox><img class="iteration-image" src="Assets/figma/carousel-01-fixed.png" alt=""></div>
+        <div class="phone iteration-card screen-card media media--bare" data-lightbox><img class="iteration-image" src="Assets/figma/carousel-02.png" alt=""></div>
+        <div class="phone iteration-card screen-card media media--bare" data-lightbox><img class="iteration-image" src="Assets/figma/carousel-03.png" alt=""></div>
+        <div class="phone iteration-card screen-card media media--bare" data-lightbox><img class="iteration-image" src="Assets/figma/carousel-04-fixed.png" alt=""></div>
+        <div class="phone iteration-card screen-card media media--bare" data-lightbox><img class="iteration-image" src="Assets/figma/carousel-05-fixed.png" alt=""></div>
+        <div class="phone iteration-card screen-card media media--bare" data-lightbox><img class="iteration-image" src="Assets/figma/carousel-06.png" alt=""></div>
+        <div class="phone iteration-card screen-card media media--bare" data-lightbox><img class="iteration-image" src="Assets/figma/carousel-07.png" alt=""></div>
+        <div class="phone iteration-card screen-card media media--bare" data-lightbox><img class="iteration-image" src="Assets/figma/carousel-08-fixed.png" alt=""></div>
+      </div>
+    </div>
+    <figcaption>Static examples</figcaption>
+  </figure>
+
+  <div class="body">
+    <p>The experiences of past feelings are still kind of always alive in there, even while scrolling through past entries.</p>
+  </div>
+
+  <figure class="media-block">
+    <div class="media" style="aspect-ratio: 600/750" data-lightbox>
+      <video src="Assets/video/step4_take02_initialflow_plusscroll_part-2.mp4" muted loop playsinline preload="metadata"></video>
+    </div>
+    <figcaption>The ink shader is rehydrated to bring it alive again for just a moment.</figcaption>
+  </figure>
+
+  <div class="body">
+    <p>What will become of this work? I’m not really sure, but it definitely was the spark that ignited a new optimism and even excitement about my work as a designer. It helped me reconnect with some of my own core values around my work and the sort of stuff I want to be doing. It was an important lesson for me to stay open-minded and fight my own curmudgeonliness when I see it start to pop up.</p>
+  </div>
+
+</main>
+</div>
+
+<!-- Lightbox -->
+<div class="lb" id="lightbox" role="dialog" aria-modal="true" aria-label="Expanded media" tabindex="-1" hidden>
+  <div class="lb-backdrop"></div>
+  <div class="lb-stage"></div>
+  <div class="lb-edge lb-edge--top" aria-hidden="true"></div>
+  <div class="lb-edge lb-edge--bottom" aria-hidden="true"></div>
+  <button class="lb-prev lb-nav" type="button" aria-label="Previous media">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M11.25 4.5 6.75 9l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <button class="lb-next lb-nav" type="button" aria-label="Next media">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="m6.75 4.5 4.5 4.5-4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <span class="lb-counter" aria-live="polite"></span>
+  <button class="lb-download" type="button" aria-label="Download media">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M8 1.5v8M4.75 6.75 8 10l3.25-3.25M2 11v2.5h12V11" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+  <button class="lb-close" type="button" aria-label="Close">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m2.25 2.25 11.5 11.5m0-11.5-11.5 11.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>
+  </button>
+</div>
+
+<script src="vendor/figma-squircle.js"></script>
+<script src="site.js?v=41-public-release"></script>
+</body>
+</html>
