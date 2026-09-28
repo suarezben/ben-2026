@@ -61,6 +61,14 @@ function setupCustomCursor() {
   const desktopPointer = matchMedia('(hover: hover) and (pointer: fine)');
   if (!desktopPointer.matches) return;
 
+  // When embedded by the portfolio shell, that top-level document owns the
+  // single cursor so it can paint above both the article and sticky header.
+  // Keep the native cursor hidden here; WritingPage forwards pointer coordinates.
+  if (window.self !== window.top) {
+    document.documentElement.classList.add('has-custom-cursor');
+    return;
+  }
+
   const cursor = document.createElement('div');
   const lens = document.createElement('div');
   cursor.className = 'custom-cursor';
@@ -138,15 +146,27 @@ function setupCustomCursor() {
 setupCustomCursor();
 
 // Exact Figma corner smoothing, applied to containers, never to the image/video file.
+const pendingGeometry = new Map();
+let geometryFrame = 0;
 const geometry = new ResizeObserver(entries => {
   for (const {target: el, contentRect: r} of entries) {
-    if (el.matches('.media--fixed')) {
-      el.style.setProperty('--dw', el.dataset.w);
-      el.style.setProperty('--dh', el.dataset.h);
-      el.style.setProperty('--s', r.width / Number(el.dataset.w));
-    }
-    smooth(el, el.offsetWidth, el.offsetHeight);
+    pendingGeometry.set(el, {width: el.offsetWidth, height: el.offsetHeight, contentWidth: r.width});
   }
+  // Apply clip-path and outline writes after ResizeObserver delivery. Writing
+  // them inside the callback can cause Chromium to report an observer loop.
+  if (!geometryFrame) geometryFrame = requestAnimationFrame(() => {
+    geometryFrame = 0;
+    const updates = [...pendingGeometry];
+    pendingGeometry.clear();
+    for (const [el, {width, height, contentWidth}] of updates) {
+      if (el.matches('.media--fixed')) {
+        el.style.setProperty('--dw', el.dataset.w);
+        el.style.setProperty('--dh', el.dataset.h);
+        el.style.setProperty('--s', contentWidth / Number(el.dataset.w));
+      }
+      smooth(el, width, height);
+    }
+  });
 });
 function smooth(el, width, height) {
   const smoothBareCard=el.classList.contains('iteration-card');
@@ -165,8 +185,10 @@ function smooth(el, width, height) {
     // The outline stroke is centered on its path. Reusing the outer clipping
     // path cuts off half of that stroke, which becomes especially noticeable
     // while carousel cards are rotated and scaled. Keep the clip at the true
-    // edge, but inset the 1px outline by half its width so it paints cleanly.
-    const outlineInset=.5;
+    // edge, but keep the 1px outline a half-pixel clear of that boundary. An
+    // exact half-stroke inset still loses antialiased corner pixels once the
+    // carousel rotates the composited card.
+    const outlineInset=1;
     const outlinePath=getSvgPath({
       width:Math.max(0,width-outlineInset*2),
       height:Math.max(0,height-outlineInset*2),
@@ -446,7 +468,15 @@ const lightbox = (() => {
     // destination aligned even if responsive layout changed while expanded.
     const backgroundTransform=background.style.transform;
     background.style.transform='';
-    for(const slide of slides) slide.origin=rect(slide.placeholder);
+    for(const slide of slides) {
+      // Carousel mapping rotates/scales track children. The placeholder is only
+      // a layout slot, so always measure it without any visual transform; using
+      // its transformed bounds here applies the card transform twice at landing.
+      const placeholderTransform=slide.placeholder.style.transform;
+      slide.placeholder.style.transform='none';
+      slide.origin=rect(slide.placeholder);
+      slide.placeholder.style.transform=placeholderTransform;
+    }
     background.style.transform=backgroundTransform;
     // The same progress spring reverses, preserving its position and velocity.
     closingTargets=slides.map(fit);
@@ -902,6 +932,13 @@ document.querySelectorAll('[data-carousel]').forEach(carousel=> {
     track.style.transform=`translate3d(${x}px,0,0)`;
     const falloff=Math.max(1,CONFIG.carouselFadeFalloff), intensity=CONFIG.carouselFadeIntensity;
     for(const item of track.children) {
+      // Lightbox placeholders preserve layout only. Mapping them like cards
+      // corrupts the return-slot geometry and creates a snap at handoff.
+      if(item.classList.contains('lb-placeholder')) {
+        item.style.transform='none';
+        item.style.opacity='0';
+        continue;
+      }
       const center=item.offsetLeft+x+item.offsetWidth/2;
       if(mapsWithPosition) {
         const isMobile=mobileCarouselLayout.matches;
@@ -949,7 +986,12 @@ document.querySelectorAll('[data-carousel]').forEach(carousel=> {
       } else item.style.opacity=targetOpacity;
     }
   }
-  measure(); new ResizeObserver(measure).observe(carousel);
+  let measureFrame=0;
+  const scheduleMeasure=()=> {
+    if(measureFrame) return;
+    measureFrame=requestAnimationFrame(()=> {measureFrame=0;measure();});
+  };
+  measure(); new ResizeObserver(scheduleMeasure).observe(carousel);
   document.addEventListener('iterationcarouseltuning',measure);
   document.addEventListener('lightboxopen',()=> {
     pausedByLightbox=true;

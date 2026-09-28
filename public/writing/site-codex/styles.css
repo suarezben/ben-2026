@@ -1,9 +1,12 @@
-/* ------------------------------------------------------------------
-   Fonts (shipped with the site so rendering matches Figma everywhere)
------------------------------------------------------------------- */
-@font-face { font-family: "Alliance No.1"; font-weight: 400; font-style: normal; font-display: swap; src: url("Assets/fonts/AllianceNo1-Regular.woff2") format("woff2"); }
-@font-face { font-family: "Alliance No.1"; font-weight: 700; font-style: normal; font-display: swap; src: url("Assets/fonts/AllianceNo1-Bold.woff2") format("woff2"); }
-@font-face { font-family: "SF Pro Rounded"; font-weight: 800 900; font-style: normal; font-display: swap; src: url("Assets/fonts/SFProRounded-Heavy.woff2") format("woff2"); }
+/* Purple display headings use the real rounded face. `ui-rounded` is only a
+   hint in Chromium and can resolve to the regular system font. */
+@font-face {
+  font-family: "Blog SF Rounded";
+  src: url("Assets/fonts/SFProRounded-Heavy.woff2") format("woff2");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
 
 /* ------------------------------------------------------------------
    Tokens
@@ -30,9 +33,9 @@
   --caption-color: #999999;
   --date-color: rgba(0,0,0,0.5);
 
-  --font-body: "Inter", -apple-system, system-ui, sans-serif;
-  --font-title: "Alliance No.1", "Inter", -apple-system, system-ui, sans-serif;
-  --font-section: "SF Pro Rounded", ui-rounded, -apple-system, system-ui, sans-serif;
+  --font-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-title: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-section: "Blog SF Rounded", ui-rounded, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
   /* lightbox / motion tunables (JS reads + writes these) */
   --lb-scale: 0.94;
@@ -169,6 +172,8 @@ img, video { display: block; }
 }
 .body p { margin: 0 0 10px; }
 .body p:last-child { margin-bottom: 0; }
+.body li { color: rgb(20 20 20 / 55%); }
+.body li::marker { color: rgb(20 20 20 / 55%); }
 .body a:link,
 .body a:visited {
   color: var(--link-color);
@@ -551,6 +556,7 @@ figcaption {
   stroke: var(--media-border);
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
+  shape-rendering: geometricPrecision;
 }
 .media--phone-tan .media-outline path { stroke: #c5b59c; }
 .media:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: -4px; }
