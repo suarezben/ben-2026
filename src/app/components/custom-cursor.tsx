@@ -9,6 +9,7 @@ const CURSOR_OFFSET = CURSOR_SIZE / 2;
 
 interface CustomCursorProps {
   isPressed: boolean;
+  suspendBackdropFilter?: boolean;
 }
 
 type ForwardedCursorMove = CustomEvent<{
@@ -34,7 +35,7 @@ const INTERACTIVE_SELECTOR = [
   '[data-lightbox]',
 ].join(',');
 
-export function CustomCursor({ isPressed }: CustomCursorProps) {
+export function CustomCursor({ isPressed, suspendBackdropFilter = false }: CustomCursorProps) {
   const cursorRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -120,8 +121,9 @@ export function CustomCursor({ isPressed }: CustomCursorProps) {
           width: CURSOR_SIZE,
           height: CURSOR_SIZE,
           transformOrigin: 'center center',
-          backdropFilter: 'invert(30%) blur(10px)',
-          WebkitBackdropFilter: 'invert(30%) blur(10px)',
+          backdropFilter: suspendBackdropFilter ? 'none' : 'invert(30%) blur(10px)',
+          WebkitBackdropFilter: suspendBackdropFilter ? 'none' : 'invert(30%) blur(10px)',
+          backgroundColor: suspendBackdropFilter ? 'rgba(19, 16, 21, 0.34)' : 'transparent',
         }}
         animate={{
           scale: isPressed || isFramePressed ? CURSOR_PRESSED_SCALE : isHovered ? CURSOR_HOVER_SCALE : 1,

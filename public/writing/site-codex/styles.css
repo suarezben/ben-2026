@@ -255,6 +255,13 @@ figcaption {
 }
 .media-row > .media { flex: 1 1 0; min-width: 0; width: auto; }
 
+/* The two Shape playground rows are one visual unit. Match their vertical
+   separation to the horizontal media-row gap at every breakpoint. */
+.media-block[data-lightbox-group="shape-playground"] +
+.media-block[data-lightbox-group="shape-playground"] {
+  margin-top: calc(var(--row-gap) - var(--block-gap));
+}
+
 .media {
   position: relative;
   width: var(--media-w);
@@ -540,6 +547,7 @@ video[poster].is-frame-ready { opacity: 1; }
     --radius: 32px;
     --block-gap: 28px;
     --section-content-gap: 10px;
+    --row-gap: 12px;
   }
   .column { width: 100%; padding-left: 24px; padding-right: 24px; }
   .media, .media-row, .media--hero { width: 100%; }
@@ -548,26 +556,22 @@ video[poster].is-frame-ready { opacity: 1; }
   .media--hero { border-radius: 0; }
   .media--hero::after { display: none; }
 
-  /* Two-column rows become paged horizontal swipes */
+  /* Two-column desktop rows become a simple reading stack on mobile. */
   .media-row {
     display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-    margin: 0 -24px; padding: 0 24px;
-    width: calc(100% + 48px);
-    gap: 12px;
+    flex-direction: column;
+    overflow: visible;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    gap: var(--row-gap);
   }
-  .media-row::-webkit-scrollbar { display: none; }
-  .media-row > .media { flex: 0 0 86%; scroll-snap-align: center; }
-  .media-row > .media:last-child { margin-right: 24px; }
-  .media-row > .lb-placeholder { flex: 0 0 86% !important; scroll-snap-align: center; }
-  @media (hover: hover) and (pointer: fine) {
-    .media-row { cursor: grab; }
-    .media-row.is-dragging { cursor: grabbing; scroll-snap-type: none; }
+  .media-row > .media {
+    flex: 0 0 auto;
+    width: 100%;
   }
-
+  .media-row > .media:last-child { margin-right: 0; }
+  .media-row > .lb-placeholder { flex: 0 0 auto !important; width: 100% !important; }
   .phone { width: 150px; }
   .lb-close, .lb-download { top: max(20px, env(safe-area-inset-top)); }
   .lb-close { right: 20px; }
@@ -776,8 +780,11 @@ video[poster].is-frame-ready { opacity: 1; }
   .media--phone { width: min(287px, 100%); }
   .media-block--hero { width: calc(100% + 8px); margin: 0 -4px; }
   .media--hero { width: 100%; }
-  .media-row { width: calc(100% + 48px); margin: 0 -24px; padding: 0 24px; }
-  .media-row > .media, .media-row > .lb-placeholder { flex: 0 0 100% !important; }
+  .media-row { width: 100%; margin: 0; padding: 0; }
+  .media-row > .media, .media-row > .lb-placeholder {
+    flex: 0 0 auto !important;
+    width: 100%;
+  }
   .media-row > .media:last-child { margin-right: 0; }
   .carousel .phone { width: 150px; }
   .lb-nav { top: auto; bottom: 8px; transform: none; width: 40px; height: 40px; }

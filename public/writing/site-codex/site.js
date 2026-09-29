@@ -6,6 +6,7 @@ const CONFIG = {
   materialWarmup: .0625, materialWarmupFrames: 3,
   dragRevealDistance: .35, dragMaxReduction: .85,
   lightboxSiblingDelay: .03,
+  backgroundVideoPauseDelay: .45,
   margin: 64, carouselSpeed: 49, momentumTau: .9,
   carouselPauseTau: .14, carouselResumeTau: .52, carouselLandingHold: .12,
   carouselFadeFalloff: 150, carouselFadeIntensity: .82,
@@ -24,6 +25,18 @@ const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const reducedTransparency = matchMedia('(prefers-reduced-transparency: reduce)');
 const supportsBackdropFilter = CSS.supports('backdrop-filter','blur(1px)') ||
   CSS.supports('-webkit-backdrop-filter','blur(1px)');
+// Chromium redraws only the damaged part of a frame. With a playing modal video
+// above a blurred backdrop-filter, the backdrop's blur can sample stale pixels
+// of the previous frame and paint a blurred copy of the media outside its
+// bounds. Filtering #page directly gives the same material with no backdrop
+// read. Safari keeps the backdrop-filter path it was tuned for.
+// Override for A/B: localStorage['lightbox-material'] = 'page' | 'backdrop'.
+const lightboxMaterialMode = (() => {
+  let stored = null;
+  try { stored = localStorage.getItem('lightbox-material'); } catch {}
+  if (stored === 'page' || stored === 'backdrop') return stored;
+  return /\b(Chrome|Chromium)\//.test(navigator.userAgent) ? 'page' : 'backdrop';
+})();
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 const mix = (a, b, t) => a + (b - a) * t;
 const carouselOpacityReturns = new WeakMap();
@@ -220,6 +233,9 @@ document.querySelectorAll('.media, .card-video, .tldr').forEach(el => geometry.o
 const visibleVideos = new Set();
 const videoRetryTimers = new WeakMap();
 const videoRetryCounts = new WeakMap();
+let modalPlaybackActive = false;
+let modalPlaybackVideos = new Set();
+let backgroundVideoPauseTimer = 0;
 const revealVideo = video => video.classList.add('is-frame-ready');
 const revealVideoAfterFirstFrame = video => {
   if(video.classList.contains('is-frame-ready')) return;
@@ -236,14 +252,17 @@ const clearVideoRetry = video => {
   if(timer) clearTimeout(timer);
   videoRetryTimers.delete(video);
 };
+const shouldPlayVideo = video => !document.hidden && (modalPlaybackActive
+  ? modalPlaybackVideos.has(video)
+  : visibleVideos.has(video));
 const retryVideo = (video, delay) => {
-  if(!visibleVideos.has(video)||videoRetryTimers.has(video)) return;
+  if(!shouldPlayVideo(video)||videoRetryTimers.has(video)) return;
   const retries=videoRetryCounts.get(video)||0;
   if(retries>=2) return;
   videoRetryCounts.set(video,retries+1);
   const timer=setTimeout(()=> {
     videoRetryTimers.delete(video);
-    if(!document.hidden&&visibleVideos.has(video)) {
+    if(shouldPlayVideo(video)) {
       if(video.error||video.readyState<3) video.load();
       playVideo(video);
     }
@@ -251,7 +270,7 @@ const retryVideo = (video, delay) => {
   videoRetryTimers.set(video,timer);
 };
 const playVideo = video => {
-  if(document.hidden||!visibleVideos.has(video)) return;
+  if(!shouldPlayVideo(video)) return;
   clearVideoRetry(video);
   video.muted=true;
   video.preload='auto';
@@ -260,11 +279,34 @@ const playVideo = video => {
     retryVideo(video,1500);
   });
 };
+const pauseVideo = video => {
+  clearVideoRetry(video);
+  video.pause();
+};
+const setModalPlaybackVideos = (videos, {delayBackground=false}={}) => {
+  modalPlaybackActive=true;
+  modalPlaybackVideos=new Set(videos);
+  clearTimeout(backgroundVideoPauseTimer);
+  for(const video of modalPlaybackVideos) playVideo(video);
+  const pauseBackground=()=>document.querySelectorAll('video').forEach(video=> {
+    if(!modalPlaybackVideos.has(video)) pauseVideo(video);
+  });
+  if(delayBackground) {
+    backgroundVideoPauseTimer=setTimeout(pauseBackground,CONFIG.backgroundVideoPauseDelay*1000);
+  } else pauseBackground();
+};
+const endModalPlayback = () => {
+  clearTimeout(backgroundVideoPauseTimer);
+  backgroundVideoPauseTimer=0;
+  modalPlaybackActive=false;
+  modalPlaybackVideos.clear();
+  for(const video of visibleVideos) playVideo(video);
+};
 const videoObserver = new IntersectionObserver(entries => {
   for (const {target: video, isIntersecting} of entries) {
     if (isIntersecting) visibleVideos.add(video); else visibleVideos.delete(video);
-    if (isIntersecting && !document.hidden) playVideo(video);
-    else { clearVideoRetry(video); video.pause(); }
+    if (shouldPlayVideo(video)) playVideo(video);
+    else pauseVideo(video);
   }
 }, {rootMargin: '160px 0px'});
 document.querySelectorAll('video').forEach(video => {
@@ -293,7 +335,7 @@ document.querySelectorAll('video').forEach(video => {
 document.addEventListener('visibilitychange', () => {
   document.querySelectorAll('video').forEach(video => {
     if (document.hidden) video.pause();
-    else if (visibleVideos.has(video)) playVideo(video);
+    else if (shouldPlayVideo(video)) playVideo(video);
   });
 });
 
@@ -379,9 +421,16 @@ const lightbox = (() => {
     // a blurred capture over the still-sharp page, which makes text look doubled.
     // Instead, animate the material itself and fade only its tint.
     backdrop.style.opacity = 1;
-    backdrop.style.backdropFilter = backdrop.style.webkitBackdropFilter = useMaterial
-      ? `blur(${CONFIG.blur*materialProgress}px) saturate(${mix(100,CONFIG.saturation,materialProgress)}%) brightness(${mix(100,CONFIG.brightness,materialProgress)}%)`
-      : 'none';
+    const material = `blur(${CONFIG.blur*materialProgress}px) saturate(${mix(100,CONFIG.saturation,materialProgress)}%) brightness(${mix(100,CONFIG.brightness,materialProgress)}%)`;
+    const filterPage = useMaterial && lightboxMaterialMode === 'page';
+    backdrop.style.backdropFilter = backdrop.style.webkitBackdropFilter =
+      useMaterial && !filterPage ? material : 'none';
+    background.style.filter = filterPage ? material : '';
+    // The scaled page leaves a margin of unfiltered canvas at the viewport
+    // edges. Give the canvas the brightness the filter gives the white page.
+    const canvasLevel = Math.round(255*mix(100,CONFIG.brightness,materialProgress)/100);
+    document.documentElement.style.background = document.body.style.background =
+      filterPage ? `rgb(${canvasLevel} ${canvasLevel} ${canvasLevel})` : '';
     // Safari derives browser-chrome color from the viewport's outer pixels, but
     // does not reliably sample a backdrop-filtered surface. Keep the blur for
     // the lightbox while placing a very thin, unfiltered translucent tint above
@@ -477,8 +526,11 @@ const lightbox = (() => {
     // leaves its layout slot. The tile's origin is still read in this frame.
     document.dispatchEvent(new CustomEvent('lightboxopen',{detail:{trigger:el}}));
     trigger=el; restoreTriggerFocus=true; savedScroll=scrollY; vw=innerWidth; vh=innerHeight;
+    const namedGroup=el.closest('[data-lightbox-group]')?.dataset.lightboxGroup;
     const group=el.closest('[data-group]');
-    const items=group?[...group.querySelectorAll('[data-lightbox]')]:[el];
+    const items=namedGroup
+      ?[...document.querySelectorAll(`[data-lightbox-group="${CSS.escape(namedGroup)}"] [data-lightbox]`)]
+      :group?[...group.querySelectorAll('[data-lightbox]')]:[el];
     index=items.indexOf(el); paging.set(index); dragX.set(0); dragY.set(0);
     // Read every origin before reparenting any item, so flex rows cannot reflow.
     // Temporarily remove carousel transforms to capture the actual layout slot;
@@ -515,10 +567,10 @@ const lightbox = (() => {
       const oldScale=parseFloat(item.dataset.carouselScale)||1;
       wrap.append(item); stage.append(wrap); item.classList.add('in-lb'); item.tabIndex=-1; item.removeAttribute('aria-hidden');
       item.style.opacity='1';
-      item.querySelectorAll('video').forEach(v=>v.play().catch(()=>{}));
       return {el:item,placeholder,wrap,origin:o,base:{w:baseWidth,h:baseHeight},oldTabIndex,oldHidden,oldOpacity,oldTransform,oldAngle,oldScale,
         entrance:new Spring(0),entranceDelay:i===index?0:CONFIG.lightboxSiblingDelay,entranceStarted:false};
     });
+    setModalPlaybackVideos(slides[index].el.querySelectorAll('video'),{delayBackground:true});
     background.style.transformOrigin=`50% ${savedScroll+vh/2}px`;
     backgroundAriaHidden=background.getAttribute('aria-hidden');
     background.setAttribute('aria-hidden','true');
@@ -586,8 +638,10 @@ const lightbox = (() => {
     slides=[]; root.hidden=true;
     if(backgroundAriaHidden===null) background.removeAttribute('aria-hidden');
     else background.setAttribute('aria-hidden',backgroundAriaHidden);
-    Object.assign(background.style,{transform:'',transformOrigin:''});
+    Object.assign(background.style,{transform:'',transformOrigin:'',filter:''});
+    document.documentElement.style.background=document.body.style.background='';
     unlockPageScroll();
+    endModalPlayback();
     tickers.delete(tick);
     // Escape is a dismissal gesture, not a request to return keyboard focus to
     // the media tile. Avoid reintroducing its focus-visible accent ring after
@@ -628,7 +682,12 @@ const lightbox = (() => {
   }
   function go(to, velocity) {
     if (state==='closed'||state==='closing') return;
-    index=clamp(to,0,slides.length-1); paging.to(index,velocity); controls();
+    const nextIndex=clamp(to,0,slides.length-1);
+    if(nextIndex!==index) {
+      index=nextIndex;
+      setModalPlaybackVideos(slides[index].el.querySelectorAll('video'));
+    }
+    paging.to(index,velocity); controls();
   }
   closeButton.addEventListener('click',close);
   downloadButton.addEventListener('click',downloadCurrent);
@@ -713,44 +772,6 @@ function accessibleMedia(el,i) {
 document.querySelectorAll('[data-lightbox]').forEach((el,i)=> {
   accessibleMedia(el,i);
   if(!el.closest('[data-carousel]')) el.addEventListener('click',()=>lightbox.open(el));
-});
-
-// Mobile media rows use native horizontal scrolling for touch and trackpads.
-// Desktop browsers do not natively drag overflow regions with a mouse, so add
-// that missing interaction while preserving tap-to-open for the lightbox.
-document.querySelectorAll('.media-row').forEach(row=> {
-  let drag=null, suppressClick=false;
-  row.addEventListener('pointerdown',e=> {
-    if(e.pointerType==='touch'||e.button!==0||lightbox.state!=='closed'||row.scrollWidth<=row.clientWidth) return;
-    drag={id:e.pointerId,x:e.clientX,left:row.scrollLeft,moved:false};
-  });
-  document.addEventListener('pointermove',e=> {
-    if(!drag||drag.id!==e.pointerId) return;
-    const dx=e.clientX-drag.x;
-    if(!drag.moved&&Math.abs(dx)>6) {
-      drag.moved=true;
-      row.classList.add('is-dragging');
-      try { row.setPointerCapture(e.pointerId); } catch {}
-    }
-    if(!drag.moved) return;
-    e.preventDefault();
-    row.scrollLeft=drag.left-dx;
-  },{passive:false});
-  const end=e=> {
-    if(!drag||drag.id!==e.pointerId) return;
-    suppressClick=drag.moved;
-    if(suppressClick) setTimeout(()=>suppressClick=false,0);
-    drag=null;
-    row.classList.remove('is-dragging');
-  };
-  document.addEventListener('pointerup',end);
-  document.addEventListener('pointercancel',end);
-  row.addEventListener('click',e=> {
-    if(!suppressClick) return;
-    suppressClick=false;
-    e.preventDefault();
-    e.stopImmediatePropagation();
-  },true);
 });
 
 function setupLightboxTuner() {

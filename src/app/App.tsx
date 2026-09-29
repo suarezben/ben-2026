@@ -436,6 +436,9 @@ type SiteView = 'work' | 'writing';
 
 const WRITING_PATH = `${import.meta.env.BASE_URL}writings/liquid-acrylic-shader`;
 const LEGACY_WRITING_PATH = `${import.meta.env.BASE_URL}writing`;
+// Fallback for the Chromium modal ghost: true swaps the cursor lens for a
+// translucent dot while the Writing lightbox is open.
+const SUSPEND_CURSOR_LENS_IN_WRITING_LIGHTBOX = false;
 
 function siteViewFromLocation(): SiteView {
   if (typeof window === 'undefined') return 'work';
@@ -1459,9 +1462,16 @@ export default function App() {
       {/*
        * One top-level cursor serves both the app shell and Writing. The embedded
        * article forwards pointer coordinates instead of drawing a second cursor.
-       */}
+      */}
       <div className="custom-cursor-host">
-        <CustomCursor isPressed={isPressed} />
+        <CustomCursor
+          isPressed={isPressed}
+          suspendBackdropFilter={
+            SUSPEND_CURSOR_LENS_IN_WRITING_LIGHTBOX &&
+            siteView === 'writing' &&
+            writingLightboxVisible
+          }
+        />
       </div>
 
       {/* Desktop Layout */}
