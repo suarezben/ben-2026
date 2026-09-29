@@ -204,10 +204,29 @@ export function WritingPage({
         'important'
       );
     };
-    const scheduleHostHeaderInset = () => requestAnimationFrame(applyHostHeaderInset);
+    // The desktop iframe is deliberately wider than the visible surface (see
+    // the overscan note on <main> below). Article widths follow the visible
+    // size published here, not the iframe's own viewport.
+    const applyVisibleViewport = () => {
+      const rect = iframe.getBoundingClientRect();
+      const visibleWidth =
+        Math.min(rect.right, document.documentElement.clientWidth) - Math.max(rect.left, 0);
+      const visibleHeight =
+        Math.min(rect.bottom, document.documentElement.clientHeight) - Math.max(rect.top, 0);
+      if (visibleWidth <= 0 || visibleHeight <= 0) return;
+      const rootStyle = frameDocument.documentElement.style;
+      rootStyle.setProperty('--article-visible-width', `${visibleWidth}px`);
+      rootStyle.setProperty('--article-visible-height', `${visibleHeight}px`);
+    };
+    const applyHostGeometry = () => {
+      applyHostHeaderInset();
+      applyVisibleViewport();
+    };
+    const scheduleHostHeaderInset = () => requestAnimationFrame(applyHostGeometry);
     const resizeObserver = new ResizeObserver(scheduleHostHeaderInset);
     const hostHeader = document.querySelector<HTMLElement>(`[data-writing-header="${variant}"]`);
     if (hostHeader) resizeObserver.observe(hostHeader);
+    resizeObserver.observe(iframe);
     window.addEventListener('resize', scheduleHostHeaderInset);
 
     frameWindow.addEventListener('scroll', onScroll, { passive: true });
@@ -222,8 +241,8 @@ export function WritingPage({
     frameDocument.addEventListener('lightboxopen', onLightboxOpen);
     frameDocument.addEventListener('lightboxprogress', onLightboxProgress);
     frameDocument.addEventListener('lightboxclose', onLightboxClose);
-    applyHostHeaderInset();
-    requestAnimationFrame(applyHostHeaderInset);
+    applyHostGeometry();
+    requestAnimationFrame(applyHostGeometry);
     setArticleReady(true);
 
     cleanupRef.current = () => {
@@ -244,6 +263,10 @@ export function WritingPage({
     };
   };
 
+  // Desktop overscan: the negative margins and the width beyond 100% keep the
+  // article surface wider than the visible area. When the lightbox scales and
+  // blurs the page, the hidden margin keeps the page edge out of view. Do not
+  // collapse it to the viewport width without re-testing that transition.
   return (
     <main
       aria-label="Writing"

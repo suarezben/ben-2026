@@ -356,6 +356,7 @@ const lightbox = (() => {
   let backgroundAriaHidden = null;
   let scrollLockStyles = null;
   let closingBackgroundPresence = 1;
+  const WIDTH_CLASSES = ['media--hero','media--wide','media--feature','media--compact','media--phone','media--height-limited'];
   const rect = el => { const r = el.getBoundingClientRect(); return {x:r.x,y:r.y,w:r.width,h:r.height}; };
   const lerpRect = (a,b,p) => ({x:mix(a.x,b.x,p),y:mix(a.y,b.y,p),w:mix(a.w,b.w,p),h:mix(a.h,b.h,p)});
   function dragReveal() {
@@ -561,11 +562,13 @@ const lightbox = (() => {
     slides=items.map((item,i)=> {
       const o=origins[i], placeholder=document.createElement('div');
       placeholder.className='lb-placeholder';
-      const isHero=item.classList.contains('media--hero');
-      if(isHero) placeholder.classList.add('lb-placeholder--hero');
+      // The placeholder takes the same width tier and height policy as the
+      // media it stands in for, so the slot cannot shift while it is expanded.
+      if(item.classList.contains('phone')) placeholder.style.width=`min(${o.w}px, calc(100vw - 40px))`;
       else {
-        const maxWidth=item.classList.contains('media--phone')?287:item.classList.contains('phone')?o.w:600;
-        placeholder.style.width=`min(${maxWidth}px, calc(100vw - 40px))`;
+        for(const name of WIDTH_CLASSES) if(item.classList.contains(name)) placeholder.classList.add(name);
+        const aspect=item.style.getPropertyValue('--media-aspect');
+        if(aspect) placeholder.style.setProperty('--media-aspect',aspect);
       }
       placeholder.style.aspectRatio=`${o.w}/${o.h}`;
       item.before(placeholder);
@@ -854,6 +857,49 @@ function setupLightboxTuner() {
 // Kept available for future local tuning, but hidden in the published experience.
 const showLightboxTuner = false;
 if (showLightboxTuner) setupLightboxTuner();
+
+// Width tuning: add ?widths to the article URL, or to the host page URL when
+// the article is embedded. Values are live CSS tokens and are not persisted.
+function setupWidthTuner() {
+  const root=document.documentElement;
+  const settings=[
+    ['--content-max','Prose',480,800,10,'px'],
+    ['--media-max','Media',560,1000,10,'px'],
+    ['--media-wide-max','Wide / hero',700,1200,10,'px'],
+    ['--media-feature-max','Feature',800,1400,10,'px'],
+    ['--media-compact-max','Compact',200,400,1,'px'],
+    ['--tall-media-viewport-share','Tall media height',0.4,1,0.01,''],
+    ['--carousel-viewport-share','Carousel height',0.3,1,0.01,''],
+  ];
+  const defaults=Object.fromEntries(settings.map(([token])=>
+    [token,parseFloat(getComputedStyle(root).getPropertyValue(token))]));
+  const panel=document.createElement('details');
+  panel.className='lightbox-tuner width-tuner'; panel.open=true;
+  panel.innerHTML=`<summary>Width tuning</summary>`+settings.map(([token,label,min,max,step])=>
+    `<label>${label} <output></output><button class="setting-reset" type="button" data-reset="${token}" aria-label="Reset ${label}" title="Reset ${label}">↺</button><input name="${token}" type="range" min="${min}" max="${max}" step="${step}"></label>`
+  ).join('')+`<button class="tuner-reset" type="button">Reset</button>`;
+  function apply(token,value) {
+    const suffix=settings.find(setting=>setting[0]===token)[5];
+    if(value===defaults[token]) root.style.removeProperty(token);
+    else root.style.setProperty(token,`${value}${suffix}`);
+    const input=panel.querySelector(`[name="${token}"]`);
+    input.value=value;
+    input.closest('label').querySelector('output').value=`${value}${suffix}`;
+  }
+  panel.addEventListener('input',e=> { if(e.target.name in defaults) apply(e.target.name,Number(e.target.value)); });
+  panel.addEventListener('click',e=> {
+    const token=e.target.dataset?.reset;
+    if(token) apply(token,defaults[token]);
+    else if(e.target.classList.contains('tuner-reset')) for(const name in defaults) apply(name,defaults[name]);
+  });
+  document.body.append(panel);
+  for(const name in defaults) apply(name,defaults[name]);
+}
+{
+  let hostSearch='';
+  try { if(parent!==window) hostSearch=parent.location.search; } catch {}
+  if([location.search,hostSearch].some(search=>new URLSearchParams(search).has('widths'))) setupWidthTuner();
+}
 
 function setupCarouselTuner() {
   const stored=JSON.parse(localStorage.getItem('carousel-tuning')||'{}');

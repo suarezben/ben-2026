@@ -12,10 +12,30 @@
    Tokens
 ------------------------------------------------------------------ */
 :root {
-  --page-max: 1440px;        /* hard max, even on a 40" display */
-  --text-w: 550px;
-  --media-w: 600px;
-  --hero-w: 900px;
+  /* Width tiers. Every tier is also capped by --article-available-width; the
+     rules live in the "Width system" section at the end of this file. */
+  --content-max: 540px;        /* prose, headings, asides, captions */
+  --media-max: 660px;          /* default media and media rows */
+  --media-wide-max: 900px;     /* .media--wide and the hero */
+  --media-feature-max: 1040px; /* .media--feature */
+  --media-compact-max: 280px;  /* .media--compact / .media--phone */
+
+  /* The embedding host publishes the visible size of the article surface.
+     The iframe itself is rendered wider than the visible area so the lightbox
+     can scale and blur the page without exposing its edge, so raw 100vw is
+     not the visible width when embedded. */
+  --article-visible-width: 100vw;
+  --article-visible-height: 100vh;
+  --article-gutter: clamp(20px, calc(var(--article-visible-width) * 0.04), 32px);
+  --article-available-width: calc(var(--article-visible-width) - 2 * var(--article-gutter));
+
+  /* Carousel cards shrink from their 197.6px design width once their layout
+     height would exceed this share of the visible height (desktop only). */
+  --carousel-viewport-share: 0.6;
+
+  /* .media--height-limited never grows taller than this on desktop. */
+  --tall-media-viewport-share: 0.75;
+  --tall-media-max-height: min(calc(var(--article-visible-height) * var(--tall-media-viewport-share)), 720px);
   --page-pad-y: 160px;
   --block-gap: 36px;         /* vertical rhythm between blocks */
   --section-content-gap: 14px;
@@ -144,7 +164,6 @@ html.lightbox-scroll-lock body::-webkit-scrollbar {
    Column
 ------------------------------------------------------------------ */
 .column {
-  width: var(--text-w);
   max-width: 100%;
   margin: 0 auto;
   padding: var(--page-pad-y) 0;
@@ -247,7 +266,6 @@ figcaption {
 .media-block figcaption { width: 100%; }
 
 .media-row {
-  width: var(--media-w);
   max-width: none;
   display: flex;
   gap: var(--row-gap);
@@ -264,7 +282,6 @@ figcaption {
 
 .media {
   position: relative;
-  width: var(--media-w);
   max-width: none;
   border-radius: var(--radius);
   corner-shape: superellipse(var(--squircle));
@@ -299,8 +316,7 @@ figcaption {
   user-select: none;
 }
 
-.media--hero { width: var(--hero-w); aspect-ratio: 900/586; }
-.media--phone { width: 287px; }
+.media--hero { aspect-ratio: 900/586; }
 .media--phone-tan::after { border-color: #c5b59c; }
 
 /* Composite media: fixed design-space inner, scaled to fit the container */
@@ -549,11 +565,6 @@ video[poster].is-frame-ready { opacity: 1; }
     --section-content-gap: 10px;
     --row-gap: 12px;
   }
-  .column { width: 100%; padding-left: 24px; padding-right: 24px; }
-  .media, .media-row, .media--hero { width: 100%; }
-  .media--phone { width: min(287px, 100%); }
-  .media-block--hero { width: calc(100% + 48px); margin: 0 -24px; }
-  .media--hero { border-radius: 0; }
   .media--hero::after { display: none; }
 
   /* Two-column desktop rows become a simple reading stack on mobile. */
@@ -563,15 +574,9 @@ video[poster].is-frame-ready { opacity: 1; }
     overflow: visible;
     margin: 0;
     padding: 0;
-    width: 100%;
     gap: var(--row-gap);
   }
-  .media-row > .media {
-    flex: 0 0 auto;
-    width: 100%;
-  }
   .media-row > .media:last-child { margin-right: 0; }
-  .media-row > .lb-placeholder { flex: 0 0 auto !important; width: 100% !important; }
   .phone { width: 150px; }
   .lb-close, .lb-download { top: max(20px, env(safe-area-inset-top)); }
   .lb-close { right: 20px; }
@@ -627,18 +632,13 @@ video[poster].is-frame-ready { opacity: 1; }
   .lightbox-tuner { left: 12px; bottom: 12px; width: min(230px, calc(100vw - 24px)); }
 }
 
-/* Responsive caps apply at every viewport size, independently of the display. */
-.column { width: min(550px, calc(100% - 40px)); padding-left: 0; padding-right: 0; }
-.media, .media-row { width: min(600px, calc(100vw - 40px)); }
-.media--hero { width: min(900px, calc(100vw - 40px)); border-radius: var(--radius); }
-.media-block--hero { width: 100%; margin: 0; }
+.media--hero { border-radius: var(--radius); }
 .media--hero > .hero-image {
   inset: auto; left: 50%; top: 50%;
   width: 65.111111%; height: 153.583618%;
   transform: translate(-50%, -50%) rotate(-90deg);
   object-fit: cover;
 }
-.media--phone { width: min(287px, calc(100vw - 40px)); }
 .media--bare { border-radius: 0; }
 .media::after { display: none; }
 .media-outline { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
@@ -651,7 +651,6 @@ video[poster].is-frame-ready { opacity: 1; }
 }
 .media--phone-tan .media-outline path { stroke: #c5b59c; }
 .media:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: -4px; }
-.media-row > .media { width: auto; }
 .shape--2 { position: relative; }
 .shape--2 img { position: absolute; left: -28.88%; top: -30.27%; margin: 0; }
 .carousel { isolation: isolate; }
@@ -778,17 +777,6 @@ video[poster].is-frame-ready { opacity: 1; }
 .lb.is-open .lb-counter { opacity: 1; }
 .lb-close:focus-visible, .lb-download:focus-visible, .lb-nav:focus-visible { outline: 2px solid white; outline-offset: 4px; }
 @media (max-width: 700px) {
-  .column { width: 100%; padding-left: 24px; padding-right: 24px; }
-  .media { width: calc(100% + 8px); }
-  .media--phone { width: min(287px, 100%); }
-  .media-block--hero { width: calc(100% + 8px); margin: 0 -4px; }
-  .media--hero { width: 100%; }
-  .media-row { width: 100%; margin: 0; padding: 0; }
-  .media-row > .media, .media-row > .lb-placeholder {
-    flex: 0 0 auto !important;
-    width: 100%;
-  }
-  .media-row > .media:last-child { margin-right: 0; }
   .carousel .phone { width: 150px; }
   .lb-nav { top: auto; bottom: 8px; transform: none; width: 40px; height: 40px; }
   .lb-prev { left: calc(50% - 86px); } .lb-next { right: calc(50% - 86px); }
@@ -800,9 +788,92 @@ video[poster].is-frame-ready { opacity: 1; }
   .lb-nav, .lb-close, .lb-download, .lb-counter { transition: none; }
 }
 
-/* Embedded hero sizing follows the host shell, not the iframe's overscanned
-   viewport. This preserves a real gutter through the mobile/desktop breakpoint
-   and keeps the hero fully underneath the white header surface when it returns. */
+.media-inner--acrylic { display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 20px; padding: 30px 40px; }
+.acrylic-screen { width: 69.428px; height: 141.536px; position: relative; }
+.acrylic-screen img { position: absolute; inset: 2.15% 4.85% 2.27% 5.08%; width: 90.07%; height: 95.58%; }
+.lb-placeholder { position: relative; }
+
+/* ------------------------------------------------------------------
+   Width system
+
+   One formula sizes the column, every media tier, media rows, and the
+   lightbox placeholders that hold a media slot while it is expanded:
+
+     width = min(tier maximum, visible available width, height-derived width)
+
+   Modifiers only change the inputs. Width tier and height policy are
+   independent, so a modifier from each group can be combined.
+------------------------------------------------------------------ */
+
+/* First-paint estimate of the visible width inside the desktop host, before
+   the host publishes the measured value. Matches the overscan in WritingPage. */
+html[data-embedded="desktop"] { --article-visible-width: calc(100vw - 35px); }
+@media (min-width: 1073px) {
+  html[data-embedded="desktop"] { --article-visible-width: calc(100vw - 49px); }
+}
+@media (min-width: 1343px) {
+  html[data-embedded="desktop"] { --article-visible-width: calc(100vw - 63px); }
+}
+
+.column {
+  width: min(var(--content-max), var(--article-available-width));
+  padding-left: 0;
+  padding-right: 0;
+}
+.media,
+.media-row,
+.lb-placeholder {
+  --media-tier-max: var(--media-max);
+  --media-height-fit: 100000px;
+  width: min(var(--media-tier-max), var(--article-available-width), var(--media-height-fit));
+}
+.media--wide,
+.media--hero { --media-tier-max: var(--media-wide-max); }
+.media--feature { --media-tier-max: var(--media-feature-max); }
+.media--compact,
+.media--phone { --media-tier-max: var(--media-compact-max); }
+.media-block--hero { width: 100%; margin: 0; }
+.media-row > .media { width: auto; }
+
+/* Height policy: requires --media-aspect (width/height) on the element. */
+@media (min-width: 701px) {
+  .media--height-limited {
+    --media-height-fit: calc(var(--tall-media-max-height) * (var(--media-aspect)));
+  }
+  .carousel .phone {
+    width: min(
+      197.6px,
+      calc(var(--article-visible-height) * var(--carousel-viewport-share) * (1206 / 2622))
+    );
+  }
+  /* A row applies the same cap to each of its columns, so media in a row is
+     never taller than the same media shown alone. */
+  .media-row.media--height-limited {
+    --media-height-fit: calc(
+      var(--tall-media-max-height) * (var(--media-aspect)) * var(--media-columns, 2) +
+      (var(--media-columns, 2) - 1) * var(--row-gap)
+    );
+  }
+}
+
+@media (max-width: 700px) {
+  .column { width: 100%; padding-left: 24px; padding-right: 24px; }
+  .media,
+  .lb-placeholder { width: calc(100% + 8px); }
+  .media--compact,
+  .media--phone { width: min(var(--media-compact-max), 100%); }
+  .media-block--hero { width: calc(100% + 8px); margin: 0 -4px; }
+  .media--hero { width: 100%; }
+  .media-row { width: 100%; margin: 0; padding: 0; }
+  .media-row > .media,
+  .media-row > .lb-placeholder {
+    flex: 0 0 auto !important;
+    width: 100%;
+  }
+}
+
+/* The mobile host keeps the hero inside a real gutter through its breakpoint
+   and fully underneath the white header surface when it returns. */
 html[data-embedded="mobile"] .media-block--hero {
   width: 100%;
   margin-left: 0;
@@ -811,17 +882,6 @@ html[data-embedded="mobile"] .media-block--hero {
 html[data-embedded="mobile"] .media--hero {
   width: min(600px, calc(100vw - 48px));
 }
-html[data-embedded="desktop"] .media--hero {
-  width: min(900px, calc(100vw - 118px));
-}
-.lb-placeholder--hero { width: var(--hero-w); }
-html[data-embedded="mobile"] .lb-placeholder--hero {
-  width: min(600px, calc(100vw - 48px));
-}
-html[data-embedded="desktop"] .lb-placeholder--hero {
-  width: min(900px, calc(100vw - 118px));
-}
-.media-inner--acrylic { display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 20px; padding: 30px 40px; }
-.acrylic-screen { width: 69.428px; height: 141.536px; position: relative; }
-.acrylic-screen img { position: absolute; inset: 2.15% 4.85% 2.27% 5.08%; width: 90.07%; height: 95.58%; }
-.lb-placeholder { position: relative; }
+
+/* ?widths tuner */
+.width-tuner { left: 48px; bottom: 24px; }

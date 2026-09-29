@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=57-animated-carousel-clip">
+<link rel="stylesheet" href="styles.css?v=61-carousel-height-cap">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%279%27 fill=%27%23efe5d6%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%278%27 fill=%27%23b072dc%27/%3E%3C/svg%3E">
 </head>
 <body>
@@ -64,14 +64,14 @@
   </div>
 
   <figure class="media-block">
-    <div class="media" style="aspect-ratio: 600/750" data-lightbox>
+    <div class="media media--height-limited" style="--media-aspect: 600/750; aspect-ratio: var(--media-aspect)" data-lightbox>
       <video src="Assets/video/step1_take02.mp4" poster="Assets/posters/step1_take02.webp" muted loop playsinline preload="none"></video>
     </div>
     <figcaption>Ink on a wet surface, reacting to tilt.</figcaption>
   </figure>
 
   <figure class="media-block" data-lightbox-group="pool-edge">
-    <div class="media-row" data-group>
+    <div class="media-row media--height-limited" style="--media-aspect: 600/750" data-group>
       <div class="media" style="aspect-ratio: 600/750" data-lightbox>
         <video src="Assets/video/step1_take03.mp4" poster="Assets/posters/step1_take03.webp" muted loop playsinline preload="none"></video>
       </div>
@@ -104,7 +104,7 @@
   </div>
 
   <figure class="media-block" data-lightbox-group="fingering">
-    <div class="media-row" data-group>
+    <div class="media-row media--height-limited" style="--media-aspect: 600/750" data-group>
       <div class="media" style="aspect-ratio: 600/750" data-lightbox>
         <video src="Assets/video/step1_take06.mp4" poster="Assets/posters/step1_take06.webp" muted loop playsinline preload="none"></video>
       </div>
@@ -129,7 +129,7 @@
   </div>
 
   <figure class="media-block">
-    <div class="media" style="aspect-ratio: 600/750" data-lightbox>
+    <div class="media media--height-limited" style="--media-aspect: 600/750; aspect-ratio: var(--media-aspect)" data-lightbox>
       <video src="Assets/video/step1_take10.mp4" poster="Assets/posters/step1_take10.webp" muted loop playsinline preload="none"></video>
     </div>
     <figcaption>A lil faster and more responsive</figcaption>
@@ -182,7 +182,7 @@
   </div>
 
   <figure class="media-block" data-lightbox-group="shape-playground">
-    <div class="media-row" data-group>
+    <div class="media-row media--height-limited" style="--media-aspect: 600/750" data-group>
       <div class="media" style="aspect-ratio: 600/750" data-lightbox>
         <video src="Assets/video/step3_take06.mp4" poster="Assets/posters/step3_take06.webp" muted loop playsinline preload="none"></video>
       </div>
@@ -193,7 +193,7 @@
   </figure>
 
   <figure class="media-block" data-lightbox-group="shape-playground">
-    <div class="media-row" data-group>
+    <div class="media-row media--height-limited" style="--media-aspect: 600/750" data-group>
       <div class="media" style="aspect-ratio: 600/750" data-lightbox>
         <video src="Assets/video/step3_take05.mp4" poster="Assets/posters/step3_take05.webp" muted loop playsinline preload="none"></video>
       </div>
@@ -205,7 +205,7 @@
   </figure>
 
   <figure class="media-block" data-lightbox-group="traditional-patterns">
-    <div class="media-row" data-group>
+    <div class="media-row media--height-limited" style="--media-aspect: 600/750" data-group>
       <div class="media" style="aspect-ratio: 600/750" data-lightbox>
         <video src="Assets/video/step3_take01.mp4" poster="Assets/posters/step3_take01.webp" muted loop playsinline preload="none"></video>
       </div>
@@ -228,7 +228,7 @@
   </div>
 
   <figure class="media-block">
-    <div class="media media--phone" style="aspect-ratio: 287/623" data-lightbox>
+    <div class="media media--phone media--height-limited" style="--media-aspect: 287/623; aspect-ratio: var(--media-aspect)" data-lightbox>
       <video src="Assets/video/rings-intro.mp4" poster="Assets/posters/rings-intro.webp" muted loop playsinline preload="none"></video>
     </div>
     <figcaption>Ink rings</figcaption>
@@ -254,7 +254,7 @@
   </div>
 
   <figure class="media-block">
-    <div class="media" style="aspect-ratio: 600/750" data-lightbox>
+    <div class="media media--height-limited" style="--media-aspect: 600/750; aspect-ratio: var(--media-aspect)" data-lightbox>
       <video src="Assets/video/step2_take08_intro.mp4" poster="Assets/posters/step2_take08_intro.webp" muted loop playsinline preload="none"></video>
     </div>
     <figcaption>Drilling down into sub-feelings</figcaption>
@@ -266,7 +266,7 @@
   </div>
 
   <figure class="media-block" data-lightbox-group="pinch-back">
-    <div class="media-row" data-group>
+    <div class="media-row media--height-limited" style="--media-aspect: 600/750" data-group>
       <div class="media" style="aspect-ratio: 600/750" data-lightbox>
         <video src="Assets/video/step2_take06_back.mp4" poster="Assets/posters/step2_take06_back.webp" muted loop playsinline preload="none"></video>
       </div>
@@ -282,14 +282,14 @@
   </div>
 
   <figure class="media-block">
-    <div class="media" style="aspect-ratio: 600/750" data-lightbox>
+    <div class="media media--height-limited" style="--media-aspect: 600/750; aspect-ratio: var(--media-aspect)" data-lightbox>
       <video src="Assets/video/step2_take04_interupt1.mp4" poster="Assets/posters/step2_take04_interupt1.webp" muted loop playsinline preload="none"></video>
     </div>
     <figcaption>Exploring my moods 😄 😌 😴 😢 😨 😠 😳</figcaption>
   </figure>
 
   <figure class="media-block">
-    <div class="media media--phone media--phone-tan" style="aspect-ratio: 287/623" data-lightbox>
+    <div class="media media--phone media--phone-tan media--height-limited" style="--media-aspect: 287/623; aspect-ratio: var(--media-aspect)" data-lightbox>
       <video src="Assets/video/moodpicker-recording.mp4" poster="Assets/posters/moodpicker-recording.webp" muted loop playsinline preload="none"></video>
     </div>
     <figcaption></figcaption>
@@ -306,7 +306,7 @@
   </div>
 
   <figure class="media-block">
-    <div class="media" style="aspect-ratio: 600/750" data-lightbox>
+    <div class="media media--height-limited" style="--media-aspect: 600/750; aspect-ratio: var(--media-aspect)" data-lightbox>
       <video src="Assets/video/step4_take02_initialflow_plusscroll_part-1.mp4" poster="Assets/posters/step4_take02_initialflow_plusscroll_part-1.webp" muted loop playsinline preload="none"></video>
     </div>
     <figcaption>Making an entry</figcaption>
@@ -333,7 +333,7 @@
   </div>
 
   <figure class="media-block">
-    <div class="media" style="aspect-ratio: 600/750" data-lightbox>
+    <div class="media media--height-limited" style="--media-aspect: 600/750; aspect-ratio: var(--media-aspect)" data-lightbox>
       <video src="Assets/video/step4_take02_initialflow_plusscroll_part-2.mp4" poster="Assets/posters/step4_take02_initialflow_plusscroll_part-2.webp" muted loop playsinline preload="none"></video>
     </div>
     <figcaption>The ink shader briefly rehydrates, coming alive once more.</figcaption>
@@ -373,6 +373,6 @@
 </div>
 
 <script src="vendor/figma-squircle.js"></script>
-<script src="site.js?v=55-restore-animated-carousel"></script>
+<script src="site.js?v=57-carousel-height-cap"></script>
 </body>
 </html>
