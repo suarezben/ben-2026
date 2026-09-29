@@ -6,6 +6,7 @@ const CONFIG = {
   materialWarmup: .0625, materialWarmupFrames: 3,
   dragRevealDistance: .35, dragMaxReduction: .85,
   lightboxSiblingDelay: .03,
+  lightboxPagingOverlap: 1.35,
   backgroundVideoPauseDelay: .45,
   margin: 64, carouselSpeed: 49, momentumTau: .9,
   carouselPauseTau: .14, carouselResumeTau: .52, carouselLandingHold: .12,
@@ -391,7 +392,21 @@ const lightbox = (() => {
       const rubberProgress=1-Math.exp(-4*revealProgress);
       pageStride=mix(1,minimumStride,rubberProgress);
     }
-    return {x:(vw-w)/2+(i-paging.x)*vw*pageStride+dragX.x,y:(vh-h)/2+dragY.x,w,h};
+    let pageOffset=i-paging.x;
+    if(slides.length>1&&Math.abs(pageOffset)<1) {
+      // Keep the outgoing slide directly attached to the gesture, but let the
+      // incoming neighbor cover its first viewport sooner. The endpoints stay
+      // exact, so the old slide still rests fully offscreen and the new one
+      // finishes centered; only the in-between spacing is compressed.
+      const direction=pointer?.axis==='x'
+        ? Math.sign(paging.x-index)
+        : Math.sign(paging.target-paging.x);
+      const incomingIndex=pointer?index+direction:index;
+      if(direction&&i===incomingIndex) {
+        pageOffset=Math.sign(pageOffset)*Math.pow(Math.abs(pageOffset),CONFIG.lightboxPagingOverlap);
+      }
+    }
+    return {x:(vw-w)/2+pageOffset*vw*pageStride+dragX.x,y:(vh-h)/2+dragY.x,w,h};
   }
   function backgroundPresence() {
     // Follow the same drag spring as the media, including its return on release.

@@ -736,8 +736,8 @@ video[poster].is-frame-ready { opacity: 1; }
 .lb-nav {
   position: absolute;
   top: 50%;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   padding: 0;
   appearance: none;
   -webkit-appearance: none;
@@ -750,14 +750,17 @@ video[poster].is-frame-ready { opacity: 1; }
   display: grid;
   place-items: center;
   transform: translateY(-50%);
+  opacity: 0;
+  transition: opacity 400ms cubic-bezier(0.2, 0.85, 0.2, 1);
 }
+.lb.is-open .lb-nav { opacity: 1; }
 .lb-nav:hover, .lb-nav:active, .lb-nav:focus { background: none; box-shadow: none; }
 .lb-nav svg { display: block; }
 .lb-prev svg { transform: translateX(-.5px); }
 .lb-next svg { transform: translateX(.5px); }
-.lb-prev { left: 16px; } .lb-next { right: 16px; }
+.lb-prev { left: 64px; } .lb-next { right: 64px; }
 .lb-nav[hidden] { display: none; }
-.lb-nav:disabled { opacity: .25; cursor: default; }
+.lb.is-open .lb-nav:disabled { opacity: .25; cursor: default; }
 .lb-counter {
   position: absolute;
   bottom: max(15px, env(safe-area-inset-bottom));
@@ -794,7 +797,7 @@ video[poster].is-frame-ready { opacity: 1; }
   .lb-counter { transform: translate(-50%, -4px); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .lb-close, .lb-download, .lb-counter { transition: none; }
+  .lb-nav, .lb-close, .lb-download, .lb-counter { transition: none; }
 }
 
 /* Embedded hero sizing follows the host shell, not the iframe's overscanned
