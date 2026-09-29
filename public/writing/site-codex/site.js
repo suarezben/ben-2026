@@ -6,6 +6,8 @@ const CONFIG = {
   materialWarmup: .0625, materialWarmupFrames: 3,
   dragRevealDistance: .35, dragMaxReduction: .85,
   lightboxSiblingDelay: .03,
+  lightboxSpatialMass: 1.8,
+  lightboxSpatialFriction: 1.42,
   lightboxPagingOverlap: 1.35,
   backgroundVideoPauseDelay: .45,
   margin: 64, carouselSpeed: 49, momentumTau: .9,
@@ -44,7 +46,7 @@ const carouselOpacityReturns = new WeakMap();
 const carouselTransformReturns = new WeakMap();
 const mobileCarouselLayout = matchMedia('(max-width: 700px)');
 class Spring {
-  constructor(x = 0) { this.set(x); }
+  constructor(x = 0, {mass=1,friction=1}={}) { this.mass=mass; this.friction=friction; this.set(x); }
   set(x) { this.x = this.target = x; this.v = 0; return this; }
   to(x, velocity) { this.target = x; if (velocity !== undefined) this.v = velocity; return this; }
   get settled() { return Math.abs(this.x - this.target) < .0001 && Math.abs(this.v) < .001; }
@@ -53,7 +55,9 @@ class Spring {
     const w = 2 * Math.PI / CONFIG.response;
     const steps = Math.ceil(dt * 240), h = dt / Math.max(1, steps);
     for (let i = 0; i < steps; i++) {
-      this.v += (-w*w*(this.x-this.target) - 2*CONFIG.damping*w*this.v)*h;
+      const springForce=-w*w*(this.x-this.target);
+      const frictionForce=-2*CONFIG.damping*w*this.friction*this.v;
+      this.v += (springForce+frictionForce)/this.mass*h;
       this.x += this.v*h;
     }
     if (this.settled) this.set(this.target);
@@ -359,6 +363,35 @@ const lightbox = (() => {
   const WIDTH_CLASSES = ['media--hero','media--wide','media--feature','media--compact','media--phone','media--height-limited'];
   const rect = el => { const r = el.getBoundingClientRect(); return {x:r.x,y:r.y,w:r.width,h:r.height}; };
   const lerpRect = (a,b,p) => ({x:mix(a.x,b.x,p),y:mix(a.y,b.y,p),w:mix(a.w,b.w,p),h:mix(a.h,b.h,p)});
+  function entranceMotion(origins, activeIndex) {
+    if(reducedMotion.matches) return origins.map(()=>({delay:0,mass:1,friction:1}));
+    // The four-up lightbox is a 2x2 spatial cluster. All four tiles react on
+    // the same frame, but distance from the clicked tile adds mass and friction
+    // to each spring. The diagonal tile therefore trails continuously rather
+    // than waiting for a clock-based stagger to begin.
+    if(origins.length===4) {
+      const active=origins[activeIndex];
+      const activeCenter={x:active.x+active.w/2,y:active.y+active.h/2};
+      const distances=origins.map((origin,i)=>i===activeIndex?0:Math.hypot(
+          origin.x+origin.w/2-activeCenter.x,
+          origin.y+origin.h/2-activeCenter.y,
+        ));
+      const furthest=Math.max(...distances,1);
+      return distances.map(distance=> {
+        const spatialProgress=distance/furthest;
+        return {
+          delay:0,
+          mass:mix(1,CONFIG.lightboxSpatialMass,spatialProgress),
+          friction:mix(1,CONFIG.lightboxSpatialFriction,spatialProgress),
+        };
+      });
+    }
+    return origins.map((_,i)=>({
+      delay:i===activeIndex?0:CONFIG.lightboxSiblingDelay,
+      mass:1,
+      friction:1,
+    }));
+  }
   function dragReveal() {
     // Horizontal movement pages grouped media, so only its vertical component
     // dismisses. A single item can dismiss freely in any direction.
@@ -559,6 +592,7 @@ const lightbox = (() => {
       item.style.transform=transform;
       return origin;
     });
+    const motion=entranceMotion(origins,index);
     slides=items.map((item,i)=> {
       const o=origins[i], placeholder=document.createElement('div');
       placeholder.className='lb-placeholder';
@@ -586,7 +620,7 @@ const lightbox = (() => {
       wrap.append(item); stage.append(wrap); item.classList.add('in-lb'); item.tabIndex=-1; item.removeAttribute('aria-hidden');
       item.style.opacity='1';
       return {el:item,placeholder,wrap,origin:o,base:{w:baseWidth,h:baseHeight},oldTabIndex,oldHidden,oldOpacity,oldTransform,oldAngle,oldScale,
-        entrance:new Spring(0),entranceDelay:i===index?0:CONFIG.lightboxSiblingDelay,entranceStarted:false};
+        entrance:new Spring(0,motion[i]),entranceDelay:motion[i].delay,entranceStarted:false};
     });
     setModalPlaybackVideos(slides[index].el.querySelectorAll('video'),{delayBackground:true});
     background.style.transformOrigin=`50% ${savedScroll+vh/2}px`;
