@@ -715,6 +715,44 @@ document.querySelectorAll('[data-lightbox]').forEach((el,i)=> {
   if(!el.closest('[data-carousel]')) el.addEventListener('click',()=>lightbox.open(el));
 });
 
+// Mobile media rows use native horizontal scrolling for touch and trackpads.
+// Desktop browsers do not natively drag overflow regions with a mouse, so add
+// that missing interaction while preserving tap-to-open for the lightbox.
+document.querySelectorAll('.media-row').forEach(row=> {
+  let drag=null, suppressClick=false;
+  row.addEventListener('pointerdown',e=> {
+    if(e.pointerType==='touch'||e.button!==0||lightbox.state!=='closed'||row.scrollWidth<=row.clientWidth) return;
+    drag={id:e.pointerId,x:e.clientX,left:row.scrollLeft,moved:false};
+  });
+  document.addEventListener('pointermove',e=> {
+    if(!drag||drag.id!==e.pointerId) return;
+    const dx=e.clientX-drag.x;
+    if(!drag.moved&&Math.abs(dx)>6) {
+      drag.moved=true;
+      row.classList.add('is-dragging');
+      try { row.setPointerCapture(e.pointerId); } catch {}
+    }
+    if(!drag.moved) return;
+    e.preventDefault();
+    row.scrollLeft=drag.left-dx;
+  },{passive:false});
+  const end=e=> {
+    if(!drag||drag.id!==e.pointerId) return;
+    suppressClick=drag.moved;
+    if(suppressClick) setTimeout(()=>suppressClick=false,0);
+    drag=null;
+    row.classList.remove('is-dragging');
+  };
+  document.addEventListener('pointerup',end);
+  document.addEventListener('pointercancel',end);
+  row.addEventListener('click',e=> {
+    if(!suppressClick) return;
+    suppressClick=false;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+  },true);
+});
+
 function setupLightboxTuner() {
   const defaults={
     backdropColor:'#131015', backdropDim:.10, blur:16,
@@ -1092,21 +1130,19 @@ document.querySelectorAll('[data-carousel]').forEach(carousel=> {
     x+=velocity*dt; wrap(); render();
   });
   carousel.addEventListener('pointerdown',e=> {
-    if(drag||(e.pointerType==='mouse'&&e.button!==0)||lightbox.state!=='closed') return;
-    drag={id:e.pointerId,x:e.clientX,y:e.clientY,start:x,last:e.clientX,time:performance.now(),velocity:0,axis:null,moved:false,target:e.target.closest('.phone')};
-    try { carousel.setPointerCapture(e.pointerId); } catch {}
+    if(drag||e.button!==0||lightbox.state!=='closed') return;
+    drag={id:e.pointerId,x:e.clientX,y:e.clientY,start:x,last:e.clientX,time:performance.now(),velocity:0,moved:false,target:e.target.closest('.phone')};
+    carousel.setPointerCapture(e.pointerId);
   });
-  const move=e=> {
+  carousel.addEventListener('pointermove',e=> {
     if(!drag||drag.id!==e.pointerId) return;
-    const dx=e.clientX-drag.x, dy=e.clientY-drag.y, now=performance.now();
-    if(!drag.axis&&Math.hypot(dx,dy)>6) drag.axis=Math.abs(dx)>Math.abs(dy)?'x':'y';
-    if(drag.axis!=='x') return;
-    e.preventDefault();
-    if(!drag.moved) {drag.moved=true;carousel.classList.add('is-dragging');}
+    const dx=e.clientX-drag.x, now=performance.now();
+    if(Math.abs(dx)>6) {drag.moved=true;carousel.classList.add('is-dragging');}
+    if(!drag.moved) return;
     drag.velocity=(e.clientX-drag.last)/Math.max(1,now-drag.time)*1000;
     drag.time=now;drag.last=e.clientX;
     x=drag.start+dx;wrap();render();
-  };
+  });
   function end(e) {
     if(!drag||drag.id!==e.pointerId) return;
     const p=drag;drag=null;carousel.classList.remove('is-dragging');
@@ -1114,33 +1150,9 @@ document.querySelectorAll('[data-carousel]').forEach(carousel=> {
     // A tap must preserve the strip's current velocity so the lightbox-open
     // lifecycle can ease it down. Only an actual drag supplies new momentum.
     if(p.moved) velocity=performance.now()-p.time>100?0:clamp(p.velocity,-5000,5000);
-    if(!p.axis&&p.target) lightbox.open(p.target);
+    if(!p.moved&&p.target) lightbox.open(p.target);
   }
-  // Track on the document like the lightbox does. This keeps the page gesture
-  // alive when a narrow desktop viewport or touch emulation moves outside the
-  // card before pointer capture has fully settled.
-  document.addEventListener('pointermove',move,{passive:false});
-  document.addEventListener('pointerup',end);
-  document.addEventListener('pointercancel',end);
-  // Desktop trackpads emit horizontal wheel deltas rather than pointer drags.
-  // Only claim clearly horizontal intent so normal vertical article scrolling
-  // continues to pass through the full-bleed carousel.
-  let lastWheelTime=0;
-  carousel.addEventListener('wheel',e=> {
-    if(lightbox.state!=='closed') return;
-    const horizontal=Math.abs(e.deltaX)>Math.abs(e.deltaY);
-    const shiftedVertical=e.shiftKey&&Math.abs(e.deltaY)>0;
-    if(!horizontal&&!shiftedVertical) return;
-    e.preventDefault();
-    const unit=e.deltaMode===1?16:e.deltaMode===2?carousel.clientWidth:1;
-    const rawDelta=(horizontal?e.deltaX:e.deltaY)*unit;
-    const delta=clamp(rawDelta,-carousel.clientWidth,carousel.clientWidth);
-    const now=performance.now(), elapsed=Math.max(16,now-lastWheelTime);
-    x-=delta;
-    velocity=clamp(-delta/elapsed*1000,-5000,5000);
-    lastWheelTime=now;
-    wrap();render();
-  },{passive:false});
+  carousel.addEventListener('pointerup',end); carousel.addEventListener('pointercancel',end);
   // Clones stay mouse/touch accessible; the original sequence is the keyboard path.
   carousel.addEventListener('focusin',e=> {
     const at=originals.indexOf(e.target);

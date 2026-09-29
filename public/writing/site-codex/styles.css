@@ -514,7 +514,7 @@ video[poster].is-frame-ready { opacity: 1; }
    asset already covers these ordinary media surfaces in the lightbox, so keep
    that fallback transparent there. Designed composite cards retain their real
    background fills and artwork. */
-.lb-slide .media:not(.media--fixed) { background-color: transparent; }
+.lb-slide .media:not(.media--fixed):not(.phone) { background-color: transparent; }
 .lb-slide .media--hero, .lb-slide .media--phone { width: 100% !important; }
 .lb-placeholder { flex: 0 0 auto; }
 .media-row > .lb-placeholder { flex: 1 1 0; min-width: 0; }
@@ -563,6 +563,10 @@ video[poster].is-frame-ready { opacity: 1; }
   .media-row > .media { flex: 0 0 86%; scroll-snap-align: center; }
   .media-row > .media:last-child { margin-right: 24px; }
   .media-row > .lb-placeholder { flex: 0 0 86% !important; scroll-snap-align: center; }
+  @media (hover: hover) and (pointer: fine) {
+    .media-row { cursor: grab; }
+    .media-row.is-dragging { cursor: grabbing; scroll-snap-type: none; }
+  }
 
   .phone { width: 150px; }
   .lb-close, .lb-download { top: max(20px, env(safe-area-inset-top)); }
