@@ -194,7 +194,7 @@ export function IntroNameHeading({
         isMobile
           ? isWriting
             ? 'relative flex h-[84px] items-center justify-between gap-0'
-            : 'relative flex h-[104px] items-start justify-between gap-0'
+            : 'relative flex h-[64px] items-start justify-between gap-0 max-[373px]:h-[77px]'
           : signatureKeepsWritingLayout
             ? 'flex h-[28px] items-center justify-between gap-4 lg:h-[35px] xl:h-[43px]'
             : 'flex items-center justify-between gap-4'
@@ -205,7 +205,7 @@ export function IntroNameHeading({
           isMobile
             ? isWriting
               ? 'h-6 min-w-0 flex-1'
-              : 'h-[104px] min-w-0 flex-1 pr-[92px]'
+              : 'h-[64px] min-w-0 flex-1 pr-[92px] max-[373px]:h-[77px]'
             : signatureKeepsWritingLayout
               ? 'h-[28px] min-w-0 flex-1 lg:h-[35px] xl:h-[43px]'
               : 'h-[52px] min-w-0 flex-1 lg:h-[64px] xl:h-[79px]'
