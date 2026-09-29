@@ -1451,7 +1451,7 @@ export default function App() {
        * One top-level cursor serves both the app shell and Writing. The embedded
        * article forwards pointer coordinates instead of drawing a second cursor.
        */}
-      <div className="hidden md:block">
+      <div className="custom-cursor-host">
         <CustomCursor isPressed={isPressed} />
       </div>
 

@@ -31,10 +31,31 @@
   }
 }
 
-/*
- * Hide the system cursor on desktop — custom cursor in App.
- * Use html + body + * so we beat Tailwind utilities (e.g. cursor-default on video).
- */
+/* Show the custom cursor whenever the device has a precise, hover-capable pointer. */
+.custom-cursor-host {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .custom-cursor-host {
+    display: block;
+  }
+
+  html body,
+  html body *,
+  html body *::before,
+  html body *::after {
+    cursor: none !important;
+  }
+
+  html body input:not([type='range']):not([type='checkbox']):not([type='radio']),
+  html body textarea,
+  html body [contenteditable='true'] {
+    cursor: text !important;
+  }
+}
+
+/* Desktop document sizing. */
 @media (min-width: 768px) {
   html {
     height: 100%;
@@ -55,18 +76,6 @@
     overflow: hidden;
   }
 
-  html body,
-  html body *,
-  html body *::before,
-  html body *::after {
-    cursor: none !important;
-  }
-
-  html body input:not([type='range']):not([type='checkbox']):not([type='radio']),
-  html body textarea,
-  html body [contenteditable='true'] {
-    cursor: text !important;
-  }
 }
 
 /* Hide scrollbar while maintaining scroll functionality */
