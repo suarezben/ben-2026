@@ -4,8 +4,7 @@ const CONFIG = {
   backdropColor: '#131015', backdropDim: .10,
   saturation: 140, brightness: 82,
   materialWarmup: .0625, materialWarmupFrames: 3,
-  dragRevealDistance: .5, dragMaxReduction: .85,
-  lightboxDismissMinStride: .75,
+  dragRevealDistance: .35, dragMaxReduction: .85,
   lightboxSiblingDelay: .03,
   margin: 64, carouselSpeed: 49, momentumTau: .9,
   carouselPauseTau: .14, carouselResumeTau: .52, carouselLandingHold: .12,
@@ -221,6 +220,17 @@ document.querySelectorAll('.media, .card-video, .tldr').forEach(el => geometry.o
 const visibleVideos = new Set();
 const videoRetryTimers = new WeakMap();
 const videoRetryCounts = new WeakMap();
+const revealVideo = video => video.classList.add('is-frame-ready');
+const revealVideoAfterFirstFrame = video => {
+  if(video.classList.contains('is-frame-ready')) return;
+  if(typeof video.requestVideoFrameCallback==='function') {
+    video.requestVideoFrameCallback(()=>revealVideo(video));
+  } else {
+    // `loadeddata` guarantees a decoded frame; two paints give older browsers
+    // time to composite it before the poster image is uncovered.
+    requestAnimationFrame(()=>requestAnimationFrame(()=>revealVideo(video)));
+  }
+};
 const clearVideoRetry = video => {
   const timer=videoRetryTimers.get(video);
   if(timer) clearTimeout(timer);
@@ -260,9 +270,20 @@ const videoObserver = new IntersectionObserver(entries => {
 document.querySelectorAll('video').forEach(video => {
   video.muted = true; video.loop = true; video.playsInline = true;
   video.disablePictureInPicture = true; video.controls = false;
+  if(video.poster) {
+    const poster=document.createElement('img');
+    poster.className='video-poster';
+    poster.src=video.getAttribute('poster');
+    poster.alt='';
+    poster.setAttribute('aria-hidden','true');
+    poster.decoding='async';
+    video.before(poster);
+  }
+  video.addEventListener('loadeddata',()=>revealVideoAfterFirstFrame(video));
   video.addEventListener('playing',()=> {
     clearVideoRetry(video);
     videoRetryCounts.set(video,0);
+    revealVideoAfterFirstFrame(video);
   });
   video.addEventListener('canplay',()=>playVideo(video));
   video.addEventListener('stalled',()=>retryVideo(video,2500));
@@ -322,17 +343,17 @@ const lightbox = (() => {
       const activeSize=fittedSize(slides[index],dismissDistance);
       const minimumGap=innerWidth<600?12:18;
       const nonOverlappingStride=((w+activeSize.w)/2+minimumGap)/vw;
-      const minimumStride=clamp(nonOverlappingStride,CONFIG.lightboxDismissMinStride,1);
+      const minimumStride=clamp(nonOverlappingStride,0,1);
       // Approach the gap limit quickly, then add increasing resistance. The
       // sibling keeps responding to the pull but cannot cross the active item.
-      const rubberProgress=1-Math.exp(-3*revealProgress);
+      const rubberProgress=1-Math.exp(-4*revealProgress);
       pageStride=mix(1,minimumStride,rubberProgress);
     }
     return {x:(vw-w)/2+(i-paging.x)*vw*pageStride+dragX.x,y:(vh-h)/2+dragY.x,w,h};
   }
   function backgroundPresence() {
     // Follow the same drag spring as the media, including its return on release.
-    // Half a viewport of travel reveals most of the page without making it flash.
+    // Roughly a third of a viewport reveals most of the page without making it flash.
     return 1-dragReveal();
   }
   function render() {
@@ -698,7 +719,7 @@ function setupLightboxTuner() {
   const defaults={
     backdropColor:'#131015', backdropDim:.10, blur:16,
     saturation:140, brightness:82,
-    dragRevealDistance:.5, dragMaxReduction:.85,
+    dragRevealDistance:.35, dragMaxReduction:.85,
     pageScale:.96, response:.48, damping:.88, margin:64,
   };
   let stored={};
@@ -1071,19 +1092,21 @@ document.querySelectorAll('[data-carousel]').forEach(carousel=> {
     x+=velocity*dt; wrap(); render();
   });
   carousel.addEventListener('pointerdown',e=> {
-    if(drag||e.button!==0||lightbox.state!=='closed') return;
-    drag={id:e.pointerId,x:e.clientX,y:e.clientY,start:x,last:e.clientX,time:performance.now(),velocity:0,moved:false,target:e.target.closest('.phone')};
-    carousel.setPointerCapture(e.pointerId);
+    if(drag||(e.pointerType==='mouse'&&e.button!==0)||lightbox.state!=='closed') return;
+    drag={id:e.pointerId,x:e.clientX,y:e.clientY,start:x,last:e.clientX,time:performance.now(),velocity:0,axis:null,moved:false,target:e.target.closest('.phone')};
+    try { carousel.setPointerCapture(e.pointerId); } catch {}
   });
-  carousel.addEventListener('pointermove',e=> {
+  const move=e=> {
     if(!drag||drag.id!==e.pointerId) return;
-    const dx=e.clientX-drag.x, now=performance.now();
-    if(Math.abs(dx)>6) {drag.moved=true;carousel.classList.add('is-dragging');}
-    if(!drag.moved) return;
+    const dx=e.clientX-drag.x, dy=e.clientY-drag.y, now=performance.now();
+    if(!drag.axis&&Math.hypot(dx,dy)>6) drag.axis=Math.abs(dx)>Math.abs(dy)?'x':'y';
+    if(drag.axis!=='x') return;
+    e.preventDefault();
+    if(!drag.moved) {drag.moved=true;carousel.classList.add('is-dragging');}
     drag.velocity=(e.clientX-drag.last)/Math.max(1,now-drag.time)*1000;
     drag.time=now;drag.last=e.clientX;
     x=drag.start+dx;wrap();render();
-  });
+  };
   function end(e) {
     if(!drag||drag.id!==e.pointerId) return;
     const p=drag;drag=null;carousel.classList.remove('is-dragging');
@@ -1091,9 +1114,33 @@ document.querySelectorAll('[data-carousel]').forEach(carousel=> {
     // A tap must preserve the strip's current velocity so the lightbox-open
     // lifecycle can ease it down. Only an actual drag supplies new momentum.
     if(p.moved) velocity=performance.now()-p.time>100?0:clamp(p.velocity,-5000,5000);
-    if(!p.moved&&p.target) lightbox.open(p.target);
+    if(!p.axis&&p.target) lightbox.open(p.target);
   }
-  carousel.addEventListener('pointerup',end); carousel.addEventListener('pointercancel',end);
+  // Track on the document like the lightbox does. This keeps the page gesture
+  // alive when a narrow desktop viewport or touch emulation moves outside the
+  // card before pointer capture has fully settled.
+  document.addEventListener('pointermove',move,{passive:false});
+  document.addEventListener('pointerup',end);
+  document.addEventListener('pointercancel',end);
+  // Desktop trackpads emit horizontal wheel deltas rather than pointer drags.
+  // Only claim clearly horizontal intent so normal vertical article scrolling
+  // continues to pass through the full-bleed carousel.
+  let lastWheelTime=0;
+  carousel.addEventListener('wheel',e=> {
+    if(lightbox.state!=='closed') return;
+    const horizontal=Math.abs(e.deltaX)>Math.abs(e.deltaY);
+    const shiftedVertical=e.shiftKey&&Math.abs(e.deltaY)>0;
+    if(!horizontal&&!shiftedVertical) return;
+    e.preventDefault();
+    const unit=e.deltaMode===1?16:e.deltaMode===2?carousel.clientWidth:1;
+    const rawDelta=(horizontal?e.deltaX:e.deltaY)*unit;
+    const delta=clamp(rawDelta,-carousel.clientWidth,carousel.clientWidth);
+    const now=performance.now(), elapsed=Math.max(16,now-lastWheelTime);
+    x-=delta;
+    velocity=clamp(-delta/elapsed*1000,-5000,5000);
+    lastWheelTime=now;
+    wrap();render();
+  },{passive:false});
   // Clones stay mouse/touch accessible; the original sequence is the keyboard path.
   carousel.addEventListener('focusin',e=> {
     const at=originals.indexOf(e.target);

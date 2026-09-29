@@ -1459,7 +1459,11 @@ export default function App() {
       <div className="hidden md:block md:h-full md:min-h-0">
         <div
           ref={desktopShellRef}
-          className="relative flex h-full min-h-0 max-h-full flex-col overflow-y-hidden px-[17.5px] pb-[60px] pt-[14px] lg:px-[24.5px] lg:pb-[80px] lg:pt-[20px] xl:px-[31.5px] xl:pt-[33px] 2xl:pt-[46px]"
+          className={`relative flex h-full min-h-0 max-h-full flex-col overflow-y-hidden px-[17.5px] pb-[60px] lg:px-[24.5px] lg:pb-[80px] xl:px-[31.5px] ${
+            siteView === 'writing'
+              ? 'pt-0'
+              : 'pt-[14px] lg:pt-[20px] xl:pt-[33px] 2xl:pt-[46px]'
+          }`}
         >
           {/* Header — tighter top inset + type for laptop (~md–xl); large desktop unchanged feel at 2xl. */}
           <motion.div
@@ -1479,7 +1483,11 @@ export default function App() {
               opacity: { duration: 0 },
               filter: { duration: 0 },
             }}
-            className={`relative shrink-0 bg-white pb-[16px] lg:pb-[20px] ${
+            className={`relative shrink-0 bg-white ${
+              siteView === 'writing'
+                ? 'pb-[8px] pt-[10px] lg:pt-[12px] xl:pt-[12px] 2xl:pt-[16px]'
+                : 'pb-[16px] lg:pb-[20px]'
+            } ${
               writingLightboxVisible ? 'z-40' : 'z-20'
             }`}
             style={{
@@ -1496,7 +1504,11 @@ export default function App() {
                     : '0 -48px 0 0 #fff',
             }}
           >
-            <div className="font-['Alliance_No.1',sans-serif] font-light leading-[normal] not-italic text-[20px] lg:text-[25px] xl:text-[30px] text-site-ink tracking-[-1px] lg:tracking-[-1.21px] xl:tracking-[-1.46px] mb-[16px] lg:mb-[20px]">
+            <div
+              className={`font-['Alliance_No.1',sans-serif] font-light leading-[normal] not-italic text-[20px] lg:text-[25px] xl:text-[30px] text-site-ink tracking-[-1px] lg:tracking-[-1.21px] xl:tracking-[-1.46px] ${
+                siteView === 'writing' ? 'mb-0' : 'mb-[16px] lg:mb-[20px]'
+              }`}
+            >
               <IntroNameHeading
                 variant="desktop"
                 view={siteView}
@@ -1637,7 +1649,7 @@ export default function App() {
             }}
             className={
                 siteView === 'writing'
-                ? `absolute left-0 right-0 top-[36px] shrink-0 bg-white px-[24px] pb-[12px] ${
+                ? `absolute left-0 right-0 top-0 shrink-0 bg-white px-[24px] pb-0 ${
                     writingLightboxVisible ? 'z-40' : 'z-20'
                   }`
                 : 'relative z-20 shrink-0 pb-[28px]'

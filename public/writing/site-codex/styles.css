@@ -314,6 +314,7 @@ figcaption {
   background-size: 17.83px 17.83px;
 }
 .card-video {
+  position: relative;
   width: 210px; height: 268px;
   border-radius: 28px;
   corner-shape: superellipse(var(--squircle));
@@ -322,7 +323,37 @@ figcaption {
   background: #fff;
   box-shadow: 0 1px 0 rgb(19 16 21 / 0.04), 0 8px 24px rgb(19 16 21 / 0.06);
 }
-.card-video video { width: 100%; height: 100%; object-fit: cover; }
+.card-video video {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Keep a real image beneath each clip until the browser has submitted its
+   first decoded video frame. Native `poster` rendering can disappear during
+   decoder startup, which otherwise exposes the empty media container. */
+.video-poster {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  user-select: none;
+}
+video[poster] {
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 180ms cubic-bezier(.23, 1, .32, 1);
+}
+video[poster].is-frame-ready { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  video[poster] { transition: none; }
+}
 
 .media-inner--sims { display: flex; }
 .media-inner--sims img { width: 200px; height: auto; }

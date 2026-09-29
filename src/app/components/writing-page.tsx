@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 
 const ARTICLE_PATH = `${import.meta.env.BASE_URL}writing/site-codex/index.html`;
 
+const WRITING_HEADER_TOP_REVEAL_Y = 24;
+const WRITING_HEADER_HIDE_DISTANCE = 16;
+const WRITING_HEADER_REVEAL_DISTANCE = 56;
+const WRITING_HEADER_REVEAL_WINDOW_MS = 250;
+
 type WritingPageProps = {
   variant: 'desktop' | 'mobile';
   onHeaderVisibilityChange: (visible: boolean) => void;
@@ -61,6 +66,11 @@ export function WritingPage({
     if (!frameWindow || !frameDocument) return;
 
     let lastScrollY = frameWindow.scrollY;
+    let downwardTravel = 0;
+    let upwardTravel = 0;
+    let upwardWindowStartedAt: number | null = null;
+    let lightboxActive = false;
+    let headerDismissedByLightbox = false;
     let headerVisible = true;
     let headerDividerVisible = false;
     const setHeaderVisible = (visible: boolean) => {
@@ -75,15 +85,49 @@ export function WritingPage({
     };
     const onScroll = () => {
       const nextY = frameWindow.scrollY;
-      if (nextY <= 24) {
+      const deltaY = nextY - lastScrollY;
+      const now = frameWindow.performance.now();
+
+      if (lightboxActive || (headerDismissedByLightbox && Math.abs(deltaY) < 1)) {
+        lastScrollY = nextY;
+        return;
+      }
+      headerDismissedByLightbox = false;
+
+      if (nextY <= WRITING_HEADER_TOP_REVEAL_Y) {
         setHeaderVisible(true);
         setHeaderDividerVisible(false);
-      } else if (nextY > lastScrollY + 3) {
-        setHeaderVisible(false);
-        setHeaderDividerVisible(false);
-      } else if (nextY < lastScrollY - 3) {
-        setHeaderVisible(true);
-        setHeaderDividerVisible(true);
+        downwardTravel = 0;
+        upwardTravel = 0;
+        upwardWindowStartedAt = null;
+      } else if (deltaY > 0) {
+        downwardTravel += deltaY;
+        upwardTravel = 0;
+        upwardWindowStartedAt = null;
+
+        if (downwardTravel >= WRITING_HEADER_HIDE_DISTANCE) {
+          setHeaderVisible(false);
+          setHeaderDividerVisible(false);
+          downwardTravel = 0;
+        }
+      } else if (deltaY < 0) {
+        downwardTravel = 0;
+
+        if (
+          upwardWindowStartedAt === null ||
+          now - upwardWindowStartedAt > WRITING_HEADER_REVEAL_WINDOW_MS
+        ) {
+          upwardWindowStartedAt = now;
+          upwardTravel = 0;
+        }
+
+        upwardTravel += Math.abs(deltaY);
+        if (upwardTravel >= WRITING_HEADER_REVEAL_DISTANCE) {
+          setHeaderVisible(true);
+          setHeaderDividerVisible(true);
+          upwardTravel = 0;
+          upwardWindowStartedAt = null;
+        }
       }
       lastScrollY = nextY;
     };
@@ -127,7 +171,24 @@ export function WritingPage({
       const progress = (event as LightboxProgressEvent).detail?.progress ?? 0;
       onLightboxProgressChange(Math.max(0, Math.min(1, progress)));
     };
-    const onLightboxClose = () => onLightboxProgressChange(0);
+    const onLightboxOpen = () => {
+      lightboxActive = true;
+      headerDismissedByLightbox = true;
+      setHeaderVisible(false);
+      setHeaderDividerVisible(false);
+      downwardTravel = 0;
+      upwardTravel = 0;
+      upwardWindowStartedAt = null;
+    };
+    const onLightboxClose = () => {
+      lightboxActive = false;
+      if (frameWindow.scrollY <= WRITING_HEADER_TOP_REVEAL_Y) {
+        headerDismissedByLightbox = false;
+        setHeaderVisible(true);
+        setHeaderDividerVisible(false);
+      }
+      onLightboxProgressChange(0);
+    };
 
     const applyHostHeaderInset = () => {
       const articleColumn = frameDocument.querySelector<HTMLElement>('.column');
@@ -136,9 +197,10 @@ export function WritingPage({
 
       const iframeTop = iframe.getBoundingClientRect().top;
       const headerBottom = hostHeader.getBoundingClientRect().bottom;
+      const headerGap = isMobile ? 0 : 24;
       articleColumn.style.setProperty(
         'padding-top',
-        `${Math.max(24, headerBottom - iframeTop + 24)}px`,
+        `${Math.max(headerGap, headerBottom - iframeTop + headerGap)}px`,
         'important'
       );
     };
@@ -157,6 +219,7 @@ export function WritingPage({
     frameDocument.addEventListener('pointercancel', releaseCursor, { passive: true });
     frameDocument.addEventListener('mouseleave', leaveArticle);
     frameWindow.addEventListener('blur', releaseCursor);
+    frameDocument.addEventListener('lightboxopen', onLightboxOpen);
     frameDocument.addEventListener('lightboxprogress', onLightboxProgress);
     frameDocument.addEventListener('lightboxclose', onLightboxClose);
     applyHostHeaderInset();
@@ -175,6 +238,7 @@ export function WritingPage({
       frameDocument.removeEventListener('pointercancel', releaseCursor);
       frameDocument.removeEventListener('mouseleave', leaveArticle);
       frameWindow.removeEventListener('blur', releaseCursor);
+      frameDocument.removeEventListener('lightboxopen', onLightboxOpen);
       frameDocument.removeEventListener('lightboxprogress', onLightboxProgress);
       frameDocument.removeEventListener('lightboxclose', onLightboxClose);
     };

@@ -144,7 +144,13 @@ export function IntroNameHeading({
     signaturePhase === 'anticipating-out';
   // Center the mobile signature between the Work and Contact text rows.
   // Keep the stable header geometry and existing transform animation unchanged.
-  const writingY = isMobile ? motionSettings.mobileY + 7 : motionSettings.desktopY;
+  const writingY = isMobile
+    ? signatureKeepsWritingLayout
+      ? 0
+      : motionSettings.mobileY + 7
+    : signatureKeepsWritingLayout
+      ? 0
+      : motionSettings.desktopY;
   const writingScale = isMobile
     ? motionSettings.mobileScale
     : motionSettings.desktopScale;
@@ -187,16 +193,22 @@ export function IntroNameHeading({
       className={
         isMobile
           ? isWriting
-            ? 'relative flex h-[52px] items-start justify-between gap-0'
+            ? 'relative flex h-[84px] items-center justify-between gap-0'
             : 'relative flex h-[104px] items-start justify-between gap-0'
-          : 'flex items-center justify-between gap-4'
+          : signatureKeepsWritingLayout
+            ? 'flex h-[28px] items-center justify-between gap-4 lg:h-[35px] xl:h-[43px]'
+            : 'flex items-center justify-between gap-4'
       }
     >
       <motion.div
         className={
           isMobile
-            ? 'h-[104px] min-w-0 flex-1 pr-[92px]'
-            : 'h-[52px] min-w-0 flex-1 lg:h-[64px] xl:h-[79px]'
+            ? isWriting
+              ? 'h-6 min-w-0 flex-1'
+              : 'h-[104px] min-w-0 flex-1 pr-[92px]'
+            : signatureKeepsWritingLayout
+              ? 'h-[28px] min-w-0 flex-1 lg:h-[35px] xl:h-[43px]'
+              : 'h-[52px] min-w-0 flex-1 lg:h-[64px] xl:h-[79px]'
         }
       >
         <p
@@ -274,9 +286,12 @@ export function IntroNameHeading({
 
       <nav
         aria-label="Primary"
+        style={{ transform: isWriting ? 'translateY(-0.25em)' : undefined }}
         className={
           isMobile
-            ? 'absolute right-0 top-[-20px] flex w-[92px] shrink-0 flex-col items-end justify-center gap-3 text-[22px] font-light leading-[1.08] tracking-[-0.99px] text-site-ink/70'
+            ? isWriting
+              ? 'flex w-[92px] shrink-0 flex-col items-end justify-center gap-1 text-[22px] font-light leading-[1.08] tracking-[-0.99px] text-site-ink/70'
+              : 'absolute right-0 top-[-20px] flex w-[92px] shrink-0 flex-col items-end justify-center gap-3 text-[22px] font-light leading-[1.08] tracking-[-0.99px] text-site-ink/70'
             : 'ml-6 flex shrink-0 items-center gap-[1.35em] text-[16px] text-site-ink/70 lg:text-[20px] xl:text-[24px]'
         }
       >
@@ -287,7 +302,9 @@ export function IntroNameHeading({
           whileTap={{ scale: 0.97 }}
           className={
             isMobile
-              ? 'relative grid min-h-11 w-full items-end justify-items-end border-0 bg-transparent px-1.5 py-0 text-right text-[22px] font-light leading-[1.08] tracking-[-0.99px] text-site-ink/70 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-site-ink/35 focus-visible:ring-offset-2'
+              ? isWriting
+                ? 'relative grid min-h-10 w-full items-end justify-items-end border-0 bg-transparent px-1.5 py-0 text-right text-[22px] font-light leading-[1.08] tracking-[-0.99px] text-site-ink/70 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-site-ink/35 focus-visible:ring-offset-2'
+                : 'relative grid min-h-11 w-full items-end justify-items-end border-0 bg-transparent px-1.5 py-0 text-right text-[22px] font-light leading-[1.08] tracking-[-0.99px] text-site-ink/70 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-site-ink/35 focus-visible:ring-offset-2'
               : 'relative grid w-[3.25em] border-0 bg-transparent p-0 text-left font-light leading-[normal] text-inherit text-[16px] transition-colors duration-200 hover:text-site-ink focus-visible:rounded-sm focus-visible:text-site-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-site-ink/35 focus-visible:ring-offset-2 lg:text-[20px] xl:text-[24px]'
           }
         >
@@ -311,7 +328,9 @@ export function IntroNameHeading({
           aria-label="Email Benjamin.r.suarez@gmail.com"
           className={
             isMobile
-              ? 'inline-flex min-h-11 w-full shrink-0 items-start justify-end px-1.5 text-right font-light text-inherit focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-site-ink/35 focus-visible:ring-offset-2'
+              ? isWriting
+                ? 'inline-flex min-h-10 w-full shrink-0 items-start justify-end px-1.5 text-right font-light text-inherit focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-site-ink/35 focus-visible:ring-offset-2'
+                : 'inline-flex min-h-11 w-full shrink-0 items-start justify-end px-1.5 text-right font-light text-inherit focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-site-ink/35 focus-visible:ring-offset-2'
               : 'inline-flex shrink-0 items-center self-center text-inherit transition-colors duration-200 hover:text-site-ink focus-visible:rounded-sm focus-visible:text-site-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-site-ink/35 focus-visible:ring-offset-2'
           }
         >
