@@ -174,6 +174,20 @@ html.lightbox-scroll-lock body::-webkit-scrollbar {
 }
 .column > * { width: 100%; }
 
+/* Each article can provide its own signature asset while sharing the footer
+   slot and article-column alignment. */
+.article-signature {
+  display: flex;
+  align-items: flex-end;
+  min-height: 35px;
+}
+.article-signature img {
+  width: 103px;
+  height: 35px;
+  object-fit: contain;
+  object-position: left bottom;
+}
+
 /* The portfolio shell owns the space above an embedded article. Set this
    before first paint so mobile never renders behind the host header and then
    jumps when React finishes measuring it. */
