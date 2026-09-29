@@ -1,4 +1,4 @@
-import { type RefObject, type ComponentProps, type MouseEvent } from 'react';
+import { useLayoutEffect, useRef, type RefObject, type ComponentProps, type MouseEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { IntroCard } from './intro-card';
 import { ProjectCard } from './project-card';
@@ -19,6 +19,7 @@ export function DesktopCarouselRail({
   scrollContainerRef,
   desktopCarouselZoomRef,
   desktopCarouselRowRef,
+  onRailMount,
   onMouseDown,
   onWheel,
   desktopCarouselContentScale,
@@ -32,6 +33,8 @@ export function DesktopCarouselRail({
   scrollContainerRef: RefObject<HTMLDivElement | null>;
   desktopCarouselZoomRef: RefObject<HTMLDivElement | null>;
   desktopCarouselRowRef: RefObject<HTMLDivElement | null>;
+  /** Layout-phase mount signal: the owner fits the vertical `zoom` before the rail's first paint. */
+  onRailMount?: () => void;
   onMouseDown: (e: MouseEvent<HTMLDivElement>) => void;
   onWheel: () => void;
   desktopCarouselContentScale: number;
@@ -43,6 +46,12 @@ export function DesktopCarouselRail({
   currentProject: DesktopCarouselProject;
   desktopLyftRailScale: number | undefined;
 }) {
+  const onRailMountRef = useRef(onRailMount);
+  onRailMountRef.current = onRailMount;
+  useLayoutEffect(() => {
+    onRailMountRef.current?.();
+  }, []);
+
   return (
     <div
       ref={scrollContainerRef}

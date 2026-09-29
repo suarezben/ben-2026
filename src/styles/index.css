@@ -78,6 +78,21 @@
 
 }
 
+/* Header Lab handoff: keep the Writing surface height unchanged while moving
+ * its identity and navigation down at the edited tablet/laptop viewports.
+ * Large desktop and mobile intentionally retain their production positions. */
+@media (min-width: 768px) and (max-width: 1359px) {
+  .writing-header-content-offset {
+    transform: translateY(4px);
+  }
+}
+
+@media (min-width: 1360px) and (max-width: 1535px) {
+  .writing-header-content-offset {
+    transform: translateY(3px);
+  }
+}
+
 /* Hide scrollbar while maintaining scroll functionality */
 .hide-scrollbar {
   -ms-overflow-style: none;  /* IE and Edge */

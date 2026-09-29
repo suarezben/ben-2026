@@ -34,6 +34,11 @@ const SIGNATURE_TRAVEL_DURATION_MS = 420;
 const SIGNATURE_RETURN_DURATION_MS = 380;
 const SIGNATURE_TRAVEL_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
 const SIGNATURE_ANTICIPATION_EASE = 'cubic-bezier(0.45, 0, 0.55, 1)';
+// The nav travels with the changing header geometry. A balanced curve spreads
+// that distance across frames; the signature's punchier ease read as a jump on
+// this smaller, text-only target in slow motion.
+const NAV_TRAVEL_DURATION_MS = 420;
+const NAV_TRAVEL_EASE = 'cubic-bezier(0.4, 0, 0.2, 1)';
 
 type SignaturePhase =
   | 'work'
@@ -60,7 +65,18 @@ export function IntroNameHeading({
   const [showIntroText, setShowIntroText] = useState(() => !isWriting);
   const signaturePhaseInitializedRef = useRef(false);
   const introTextRef = useRef<HTMLSpanElement>(null);
+  const navRef = useRef<HTMLElement>(null);
+  const navAnimationRef = useRef<Animation | null>(null);
+  const navVisualOriginRef = useRef<{ left: number; top: number } | null>(null);
+  const lastNavLayoutRef = useRef<{ left: number; top: number } | null>(null);
   const [introTextOffset, setIntroTextOffset] = useState(0);
+
+  const captureNavVisualPosition = () => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const rect = nav.getBoundingClientRect();
+    navVisualOriginRef.current = { left: rect.left, top: rect.top };
+  };
 
   useLayoutEffect(() => {
     const introText = introTextRef.current;
@@ -139,6 +155,38 @@ export function IntroNameHeading({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isWriting]);
 
+  useLayoutEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+
+    const origin = navVisualOriginRef.current ?? lastNavLayoutRef.current;
+    navAnimationRef.current?.cancel();
+
+    const finalRect = nav.getBoundingClientRect();
+    const finalPosition = { left: finalRect.left, top: finalRect.top };
+    lastNavLayoutRef.current = finalPosition;
+    navVisualOriginRef.current = null;
+
+    if (!origin || shouldReduceMotion) return;
+
+    const deltaX = origin.left - finalPosition.left;
+    const deltaY = origin.top - finalPosition.top;
+    if (Math.abs(deltaX) < 0.25 && Math.abs(deltaY) < 0.25) return;
+
+    navAnimationRef.current = nav.animate(
+      [
+        { transform: `translate3d(${deltaX}px, ${deltaY}px, 0)` },
+        { transform: 'translate3d(0, 0, 0)' },
+      ],
+      {
+        duration: NAV_TRAVEL_DURATION_MS,
+        easing: NAV_TRAVEL_EASE,
+      }
+    );
+  }, [isWriting, shouldReduceMotion]);
+
+  useEffect(() => () => navAnimationRef.current?.cancel(), []);
+
   const signatureKeepsWritingLayout =
     signaturePhase === 'writing' ||
     signaturePhase === 'anticipating-out';
@@ -195,7 +243,7 @@ export function IntroNameHeading({
           ? isWriting
             ? 'relative flex h-[84px] items-center justify-between gap-0'
             : 'relative flex h-[64px] items-start justify-between gap-0 max-[373px]:h-[77px]'
-          : signatureKeepsWritingLayout
+          : isWriting
             ? 'flex h-[28px] items-center justify-between gap-4 lg:h-[35px] xl:h-[43px]'
             : 'flex items-center justify-between gap-4'
       }
@@ -206,7 +254,7 @@ export function IntroNameHeading({
             ? isWriting
               ? 'h-6 min-w-0 flex-1'
               : 'h-[64px] min-w-0 flex-1 pr-[92px] max-[373px]:h-[77px]'
-            : signatureKeepsWritingLayout
+            : isWriting
               ? 'h-[28px] min-w-0 flex-1 lg:h-[35px] xl:h-[43px]'
               : 'h-[52px] min-w-0 flex-1 lg:h-[64px] xl:h-[79px]'
         }
@@ -220,6 +268,7 @@ export function IntroNameHeading({
         >
           <motion.span
             ref={introTextRef}
+            data-work-hold={isMobile ? undefined : ''}
             initial={false}
             aria-hidden={!showIntroText}
             animate={{
@@ -237,7 +286,10 @@ export function IntroNameHeading({
 
           <button
             type="button"
-            onClick={onSignatureClick}
+            onClick={() => {
+              if (isWriting) captureNavVisualPosition();
+              onSignatureClick?.();
+            }}
             aria-label={isWriting ? 'Back to work' : 'Open first project: Meta Reality Labs'}
             style={{
               transform: `translate3d(${signatureMotionTarget.x}px, ${signatureMotionTarget.y}px, 0) scale(${signatureMotionTarget.scale})`,
@@ -268,6 +320,7 @@ export function IntroNameHeading({
           {showIntroText && (
             <motion.p
               key="intro-location"
+              data-work-hold={isMobile ? undefined : ''}
               initial={{ opacity: 0, filter: 'blur(7px)' }}
               animate={{ opacity: 1, filter: 'blur(0px)' }}
               exit={{ opacity: 0, filter: 'blur(7px)' }}
@@ -285,19 +338,23 @@ export function IntroNameHeading({
       </motion.div>
 
       <nav
+        ref={navRef}
         aria-label="Primary"
-        style={{ transform: isWriting ? 'translateY(-0.25em)' : undefined }}
         className={
           isMobile
             ? isWriting
-              ? 'flex w-[92px] shrink-0 flex-col items-end justify-center gap-1 text-[22px] font-light leading-[1.08] tracking-[-0.99px] text-site-ink/70'
+              ? 'relative top-[-0.25em] flex w-[92px] shrink-0 flex-col items-end justify-center gap-1 text-[22px] font-light leading-[1.08] tracking-[-0.99px] text-site-ink/70'
               : 'absolute right-0 top-[-20px] flex w-[92px] shrink-0 flex-col items-end justify-center gap-3 text-[22px] font-light leading-[1.08] tracking-[-0.99px] text-site-ink/70'
-            : 'ml-6 flex shrink-0 items-center gap-[1.35em] text-[16px] text-site-ink/70 lg:text-[20px] xl:text-[24px]'
+            : `${isWriting ? 'relative top-[-0.25em]' : ''} ml-6 flex shrink-0 items-center gap-[1.35em] text-[16px] text-site-ink/70 lg:text-[20px] xl:text-[24px]`
         }
       >
         <motion.button
           type="button"
-          onClick={isWriting ? onWorkClick : onWritingClick}
+          onClick={() => {
+            captureNavVisualPosition();
+            if (isWriting) onWorkClick?.();
+            else onWritingClick?.();
+          }}
           aria-label={isWriting ? 'Back to work' : 'Open writing'}
           whileTap={{ scale: 0.97 }}
           className={
@@ -308,19 +365,32 @@ export function IntroNameHeading({
               : 'relative grid w-[3.25em] border-0 bg-transparent p-0 text-left font-light leading-[normal] text-inherit text-[16px] transition-colors duration-200 hover:text-site-ink focus-visible:rounded-sm focus-visible:text-site-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-site-ink/35 focus-visible:ring-offset-2 lg:text-[20px] xl:text-[24px]'
           }
         >
-          <AnimatePresence initial={false} mode="wait">
-            <motion.span
-              key={isWriting ? 'work' : 'writing'}
-              initial={{ opacity: 0, filter: 'blur(5px)', transform: 'scale(0.85)' }}
-              animate={{ opacity: 1, filter: 'blur(0px)', transform: 'scale(1)' }}
-              exit={{ opacity: 0, filter: 'blur(5px)', transform: 'scale(0.85)' }}
-              transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
-              style={{ transformOrigin: isMobile ? 'right center' : 'left center' }}
-              className="col-start-1 row-start-1"
-            >
-              {isWriting ? 'Work' : 'Writing'}
-            </motion.span>
-          </AnimatePresence>
+          <span
+            aria-hidden="true"
+            className="pointer-events-none col-start-1 row-start-1"
+            style={{
+              opacity: isWriting ? 1 : 0,
+              transition: shouldReduceMotion
+                ? 'none'
+                : 'opacity 150ms cubic-bezier(0.23, 1, 0.32, 1)',
+              willChange: shouldReduceMotion ? undefined : 'opacity',
+            }}
+          >
+            Work
+          </span>
+          <span
+            aria-hidden="true"
+            className="pointer-events-none col-start-1 row-start-1"
+            style={{
+              opacity: isWriting ? 0 : 1,
+              transition: shouldReduceMotion
+                ? 'none'
+                : 'opacity 150ms cubic-bezier(0.23, 1, 0.32, 1)',
+              willChange: shouldReduceMotion ? undefined : 'opacity',
+            }}
+          >
+            Writing
+          </span>
         </motion.button>
 
         <a

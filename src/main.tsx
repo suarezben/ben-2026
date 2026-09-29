@@ -1,5 +1,6 @@
 import { createRoot } from "react-dom/client";
 import App from "./app/App.tsx";
+import { HeaderLab } from "./app/components/header-lab.tsx";
 import "./styles/index.css";
 import { waitForWebFonts } from "./wait-for-webfonts";
 
@@ -21,7 +22,8 @@ void waitForWebFonts()
     /* waitForWebFonts should not reject; guard anyway so first paint always mounts */
   })
   .then(() => {
-    createRoot(rootEl).render(<App />);
+    const isHeaderLab = window.location.pathname.replace(/\/+$/, '').endsWith('/header-lab');
+    createRoot(rootEl).render(isHeaderLab ? <HeaderLab /> : <App />);
     if (import.meta.env.DEV) {
       const t = document.title.replace(/\s*·\s*dev\s*$/i, "").trim();
       document.title = t ? `${t} · dev` : "· dev";

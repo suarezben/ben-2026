@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
-import { motion, AnimatePresence, animate } from 'motion/react';
+import { motion, AnimatePresence, animate, useReducedMotion } from 'motion/react';
 import { IntroNameHeading } from './components/intro-name-heading';
 import { WritingPage } from './components/writing-page';
 import { ProjectChip } from './components/project-chip';
@@ -506,6 +506,7 @@ function initialSignatureMotionSettings(): SignatureMotionSettings {
 }
 
 export default function App() {
+  const shouldReduceMotion = useReducedMotion();
   const [activeProject, setActiveProject] = useState('meta');
   const [siteView, setSiteView] = useState<SiteView>(siteViewFromLocation);
   const [writingHeaderVisible, setWritingHeaderVisible] = useState(true);
@@ -565,6 +566,66 @@ export default function App() {
   const desktopCarouselRemeasureRef = useRef<(() => void) | null>(null);
   /** Several passes in rAF; WebKit often reports wrong rects until layout is flushed (horizontal scroll “fixed” it). */
   const desktopCarouselBurstRemeasureRef = useRef<(() => void) | null>(null);
+  /** Bumped from the rail's mount layout effect so the fit below re-observes and measures before first paint. */
+  const [desktopRailMountKey, setDesktopRailMountKey] = useState(0);
+  const siteViewRef = useRef(siteView);
+  siteViewRef.current = siteView;
+  /**
+   * Desktop page surface sequencing: the rendered surface fades out, then swaps to the current
+   * `siteView` and fades in. Replaces `AnimatePresence mode="wait"`, which under fast toggling could
+   * mount the outgoing page as already-exited and never remove it (Work stayed blank).
+   */
+  const [desktopSurface, setDesktopSurface] = useState<{ view: SiteView; visible: boolean }>({
+    view: siteView,
+    visible: true,
+  });
+  const desktopSurfaceRef = useRef(desktopSurface);
+  desktopSurfaceRef.current = desktopSurface;
+  const desktopSurfaceHasSwappedRef = useRef(false);
+  useLayoutEffect(() => {
+    setDesktopSurface((surface) => {
+      const visible = surface.view === siteView;
+      return surface.visible === visible ? surface : { ...surface, visible };
+    });
+  }, [siteView]);
+  const handleDesktopSurfaceAnimationComplete = () => {
+    if (desktopSurfaceRef.current.visible) return;
+    desktopSurfaceHasSwappedRef.current = true;
+    setDesktopSurface({ view: siteViewRef.current, visible: true });
+  };
+  /** Fallback when the fade-out has nothing to animate (surface toggled away while still at opacity 0). */
+  useEffect(() => {
+    if (desktopSurface.visible) return;
+    const id = window.setTimeout(handleDesktopSurfaceAnimationComplete, 320);
+    return () => window.clearTimeout(id);
+  }, [desktopSurface]);
+  const desktopSurfaceHidden = {
+    opacity: 0,
+    filter: shouldReduceMotion ? 'none' : 'blur(3px)',
+  };
+  const desktopSurfaceMotion = {
+    initial: desktopSurfaceHasSwappedRef.current ? desktopSurfaceHidden : false,
+    animate: desktopSurface.visible
+      ? { opacity: 1, filter: 'blur(0px)' }
+      : desktopSurfaceHidden,
+    onUpdate: renderPresenceFade,
+    onAnimationComplete: handleDesktopSurfaceAnimationComplete,
+    style: { willChange: shouldReduceMotion ? 'opacity' : 'opacity, filter' },
+  } as const;
+  /**
+   * Fading Work content (`data-work-hold`: rail, chips, intro copy) keeps its on-screen position
+   * while the header collapses underneath it. Tops are captured before the view change commits.
+   */
+  const desktopWorkHoldTopsRef = useRef(new Map<HTMLElement, number>());
+  const desktopWorkHoldElements = () =>
+    Array.from(
+      desktopShellRef.current?.querySelectorAll<HTMLElement>('[data-work-hold]') ?? []
+    );
+  const captureDesktopWorkTop = () => {
+    const tops = new Map<HTMLElement, number>();
+    for (const el of desktopWorkHoldElements()) tops.set(el, el.getBoundingClientRect().top);
+    desktopWorkHoldTopsRef.current = tops;
+  };
   const isDragging = useRef(false);
   const startX = useRef(0);
   const scrollLeft = useRef(0);
@@ -636,6 +697,7 @@ export default function App() {
   }, [signatureMotionSettings]);
 
   const navigateToView = (nextView: SiteView) => {
+    captureDesktopWorkTop();
     setSiteView(nextView);
     const basePath = import.meta.env.BASE_URL;
     const nextPath = nextView === 'writing' ? WRITING_PATH : basePath;
@@ -653,7 +715,10 @@ export default function App() {
   };
 
   useEffect(() => {
-    const handlePopState = () => setSiteView(siteViewFromLocation());
+    const handlePopState = () => {
+      captureDesktopWorkTop();
+      setSiteView(siteViewFromLocation());
+    };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
@@ -832,6 +897,24 @@ export default function App() {
     activeProject === 'lyft' ? LYFT_DESKTOP_RAIL_WIDTH_SCALE : undefined;
 
   /**
+   * Desktop: the header takes its Writing height in the same commit as the view change, which would
+   * pull the still-fading Work rail up with it. Offset the rail back to where it was (transform only).
+   */
+  useLayoutEffect(() => {
+    const els = desktopWorkHoldElements();
+    // `translate` rather than `transform`: Motion owns `transform` on some of these nodes.
+    for (const el of els) el.style.translate = '';
+    if (siteView !== 'writing') return;
+    const tops = desktopWorkHoldTopsRef.current;
+    for (const el of els) {
+      const from = tops.get(el);
+      if (from == null) continue;
+      const delta = from - el.getBoundingClientRect().top;
+      if (Math.abs(delta) > 0.25) el.style.translate = `0 ${delta}px`;
+    }
+  }, [siteView]);
+
+  /**
    * Desktop: vertically fit the horizontal carousel (intro + media) inside the visible shell without
    * clipping the bottom; chips stay unscaled. Uses `zoom` so layout width/height track the shrink.
    */
@@ -845,6 +928,9 @@ export default function App() {
       const scrollEl = scrollContainerRef.current;
       const zoomWrap = desktopCarouselZoomRef.current;
       if (!rowEl || !scrollEl) return;
+      // An exiting Work rail sits under the Writing header; fitting against that geometry would
+      // leave a stale zoom for the next Work mount.
+      if (siteViewRef.current !== 'work') return;
 
       void shell.offsetHeight;
       void scrollEl.offsetHeight;
@@ -920,7 +1006,7 @@ export default function App() {
       ro.disconnect();
       window.removeEventListener('resize', rafMeasure);
     };
-  }, [isMobile, activeProject, currentProject.cards.length]);
+  }, [isMobile, activeProject, currentProject.cards.length, desktopRailMountKey]);
 
   /** WebKit: late remeasure after fonts/masks settle — aspect ratios come from the manifest so no media wait. */
   useEffect(() => {
@@ -1525,6 +1611,8 @@ export default function App() {
           >
             <div
               className={`font-['Alliance_No.1',sans-serif] font-light leading-[normal] not-italic text-[20px] lg:text-[25px] xl:text-[30px] text-site-ink tracking-[-1px] lg:tracking-[-1.21px] xl:tracking-[-1.46px] ${
+                siteView === 'writing' ? 'writing-header-content-offset' : ''
+              } ${
                 siteView === 'writing' ? 'mb-0' : 'mb-[16px] lg:mb-[20px]'
               }`}
             >
@@ -1539,45 +1627,47 @@ export default function App() {
             </div>
 
             {/* Desktop chips: one row until the content edge, then natural wrap (mobile stays horizontal scroll). */}
-            <AnimatePresence initial={false} mode="sync">
-              {siteView === 'work' && (
-                <motion.div
-                  key="desktop-project-chips"
-                  onUpdate={renderPresenceFade}
-                  layout
-                  initial={{ opacity: 0, filter: 'blur(8px)' }}
-                  animate={{ opacity: 1, filter: 'blur(0px)' }}
-                  exit={{ opacity: 0, filter: 'blur(8px)' }}
-                  transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
-                  className="flex w-full min-w-0 flex-wrap gap-[4px] lg:gap-[4px] xl:gap-[5px]"
-                >
-                  {projectsWithMedia.map((project) => (
-                    <ProjectChip
-                      key={project.id}
-                      label={project.name}
-                      isActive={activeProject === project.id}
-                      onClick={() => setActiveProject(project.id)}
-                    />
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <motion.div
+              data-work-hold
+              aria-hidden={siteView !== 'work'}
+              onUpdate={renderPresenceFade}
+              initial={false}
+              animate={{
+                opacity: siteView === 'work' ? 1 : 0,
+                filter: siteView === 'work' ? 'blur(0px)' : 'blur(8px)',
+              }}
+              transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
+              // Keep the exiting chips paintable, but take them out of flow in
+              // the same commit as the view change. AnimatePresence retained
+              // their 36px layout height until exit completion, which moved the
+              // nav and Writing inset in a single late frame.
+              style={{
+                pointerEvents: siteView === 'work' ? undefined : 'none',
+              }}
+              className={`${siteView === 'work' ? 'relative' : 'absolute'} flex w-full min-w-0 flex-wrap gap-[4px] lg:gap-[4px] xl:gap-[5px]`}
+            >
+              {projectsWithMedia.map((project) => (
+                <ProjectChip
+                  key={project.id}
+                  label={project.name}
+                  isActive={activeProject === project.id}
+                  onClick={() => setActiveProject(project.id)}
+                />
+              ))}
+            </motion.div>
           </motion.div>
 
           <div>
-          <AnimatePresence initial={false} mode="wait">
-            {siteView === 'work' ? (
+            {desktopSurface.view === 'work' ? (
               <motion.div
                 key="desktop-work"
-                onUpdate={renderPresenceFade}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                style={{ willChange: 'opacity' }}
+                {...desktopSurfaceMotion}
                 transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
               >
                 {/* Horizontal Scrolling Projects — markup lives in `desktop-carousel-rail.tsx` so JSX can’t break the whole app. */}
+                <div data-work-hold>
                 <DesktopCarouselRail
+                  onRailMount={() => setDesktopRailMountKey((k) => k + 1)}
                   scrollContainerRef={scrollContainerRef}
                   desktopCarouselZoomRef={desktopCarouselZoomRef}
                   desktopCarouselRowRef={desktopCarouselRowRef}
@@ -1593,20 +1683,19 @@ export default function App() {
                   currentProject={currentProject}
                   desktopLyftRailScale={desktopLyftRailScale}
                 />
+                </div>
               </motion.div>
             ) : (
               <motion.div
                 key="desktop-writing"
-                onUpdate={renderPresenceFade}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                style={{ willChange: 'opacity' }}
+                {...desktopSurfaceMotion}
                 transition={{ duration: 0.24, ease: [0.23, 1, 0.32, 1] }}
-                // Position the keyed page itself so its geometry survives its exit.
-                // Changing the shared parent on navigation clipped Writing and
-                // moved Work before either outgoing fade had finished.
-                className={`absolute inset-0 h-full min-h-0 ${writingLightboxVisible ? 'z-30' : 'z-0'}`}
+                // Anchor the Writing surface to the desktop shell, not the
+                // header-dependent Work content slot. That keeps the outgoing
+                // article fixed while the taller Work header returns.
+                // Horizontal insets match the shell padding so WritingPage's edge
+                // bleed ends at the viewport edge instead of overflowing the shell.
+                className={`absolute inset-y-0 inset-x-[17.5px] h-full min-h-0 lg:inset-x-[24.5px] xl:inset-x-[31.5px] ${writingLightboxVisible ? 'z-30' : 'z-0'}`}
               >
                 {!isMobile && (
                   <WritingPage
@@ -1618,7 +1707,6 @@ export default function App() {
                 )}
               </motion.div>
             )}
-          </AnimatePresence>
           </div>
         </div>
       </div>

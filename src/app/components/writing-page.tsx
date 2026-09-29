@@ -224,8 +224,9 @@ export function WritingPage({
     };
     const scheduleHostHeaderInset = () => requestAnimationFrame(applyHostGeometry);
     const resizeObserver = new ResizeObserver(scheduleHostHeaderInset);
-    const hostHeader = document.querySelector<HTMLElement>(`[data-writing-header="${variant}"]`);
-    if (hostHeader) resizeObserver.observe(hostHeader);
+    // Header visibility uses transforms and does not change its layout height.
+    // Observing the header here made the outgoing article adopt Work's taller
+    // inset during its fade, producing a jump and a temporary white bottom bar.
     resizeObserver.observe(iframe);
     window.addEventListener('resize', scheduleHostHeaderInset);
 
@@ -280,11 +281,16 @@ export function WritingPage({
         ref={iframeRef}
         src={`${ARTICLE_PATH}?embedded=${variant}`}
         title="AI helped me build something I actually wanted to print."
-        className="block h-full w-full border-0 bg-white"
+        className="block h-full w-full border-0 bg-white transition-[opacity,filter] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
+        style={{
+          opacity: articleReady ? 1 : 0,
+          filter: articleReady ? 'blur(0px)' : 'blur(2px)',
+          willChange: articleReady ? undefined : 'opacity, filter',
+        }}
         allow="autoplay; fullscreen"
         onLoad={(event) => connectArticle(event.currentTarget)}
       />
-      {!articleReady && <div aria-hidden className="absolute inset-0" />}
+      {!articleReady && <div aria-hidden className="pointer-events-none absolute inset-0 bg-white" />}
     </main>
   );
 }
