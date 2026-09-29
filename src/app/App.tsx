@@ -434,9 +434,13 @@ function useBackgroundMediaPrefetch(activeProject: string) {
 
 type SiteView = 'work' | 'writing';
 
+const WRITING_PATH = `${import.meta.env.BASE_URL}writings/liquid-acrylic-shader`;
+const LEGACY_WRITING_PATH = `${import.meta.env.BASE_URL}writing`;
+
 function siteViewFromLocation(): SiteView {
   if (typeof window === 'undefined') return 'work';
-  return window.location.pathname.replace(/\/+$/, '').endsWith('/writing')
+  const pathname = window.location.pathname.replace(/\/+$/, '');
+  return pathname === WRITING_PATH || pathname === LEGACY_WRITING_PATH
     ? 'writing'
     : 'work';
 }
@@ -505,6 +509,11 @@ export default function App() {
   const [writingHeaderDividerVisible, setWritingHeaderDividerVisible] = useState(false);
   const [writingLightboxProgress, setWritingLightboxProgress] = useState(0);
   const writingLightboxVisible = writingLightboxProgress > 0.001;
+  useEffect(() => {
+    if (window.location.pathname.replace(/\/+$/, '') === LEGACY_WRITING_PATH) {
+      window.history.replaceState({ siteView: 'writing' }, '', WRITING_PATH);
+    }
+  }, []);
   useEffect(() => {
     if (siteView === 'writing') {
       setWritingHeaderVisible(true);
@@ -626,7 +635,7 @@ export default function App() {
   const navigateToView = (nextView: SiteView) => {
     setSiteView(nextView);
     const basePath = import.meta.env.BASE_URL;
-    const nextPath = nextView === 'writing' ? `${basePath}writing` : basePath;
+    const nextPath = nextView === 'writing' ? WRITING_PATH : basePath;
     if (window.location.pathname !== nextPath) {
       window.history.pushState({ siteView: nextView }, '', nextPath);
     }
