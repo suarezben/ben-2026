@@ -509,6 +509,12 @@ video[poster].is-frame-ready { opacity: 1; }
   will-change: transform, width, height;
 }
 .lb-slide .media { width: 100% !important; height: 100% !important; aspect-ratio: auto !important; cursor: default; }
+/* Safari can briefly composite a transformed media container's opaque fallback
+   as an unclipped rectangle while the video/image itself remains rounded. The
+   asset already covers these ordinary media surfaces in the lightbox, so keep
+   that fallback transparent there. Designed composite cards retain their real
+   background fills and artwork. */
+.lb-slide .media:not(.media--fixed) { background-color: transparent; }
 .lb-slide .media--hero, .lb-slide .media--phone { width: 100% !important; }
 .lb-placeholder { flex: 0 0 auto; }
 .media-row > .lb-placeholder { flex: 1 1 0; min-width: 0; }
