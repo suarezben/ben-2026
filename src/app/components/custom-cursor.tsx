@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 
-/** Matas-style `invert(30%) blur(10px)`; ~20px per original Matas notes (his ship is 50px). */
-const CURSOR_SIZE = 20;
+/** Matas-style `invert(30%) blur(10px)`; size varies by interaction state. */
+const CURSOR_SIZE = 24;
+const CURSOR_HOVER_SCALE = 16 / CURSOR_SIZE;
+const CURSOR_PRESSED_SCALE = 10 / CURSOR_SIZE;
 const CURSOR_OFFSET = CURSOR_SIZE / 2;
 
 interface CustomCursorProps {
@@ -121,7 +123,9 @@ export function CustomCursor({ isPressed }: CustomCursorProps) {
           backdropFilter: 'invert(30%) blur(10px)',
           WebkitBackdropFilter: 'invert(30%) blur(10px)',
         }}
-        animate={{ scale: isPressed || isFramePressed ? 0.66 : isHovered ? 0.84 : 1 }}
+        animate={{
+          scale: isPressed || isFramePressed ? CURSOR_PRESSED_SCALE : isHovered ? CURSOR_HOVER_SCALE : 1,
+        }}
         transition={{ type: 'spring', stiffness: 800, damping: 30, mass: 0.3 }}
       />
     </div>
