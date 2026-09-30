@@ -584,6 +584,7 @@ const lightbox = (() => {
     // Read every origin before reparenting any item, so flex rows cannot reflow.
     // Temporarily remove carousel transforms to capture the actual layout slot;
     // this stays exact for any scale, rotation, or transform-origin setting.
+    items.forEach(item=>mediaPress.get(item)?.reset());
     const origins=items.map(item=> {
       if(!item.dataset.carouselAngle) return rect(item);
       const transform=item.style.transform;
@@ -631,7 +632,7 @@ const lightbox = (() => {
     // makes mobile Safari rebuild the page for a frame when the lightbox closes.
     lockPageScroll();
     root.hidden=false; state='priming';
-    progress.set(0); controls(); render(); root.focus({preventScroll:true}); tickers.add(tick);
+    progress.friction=1; progress.set(0); controls(); render(); root.focus({preventScroll:true}); tickers.add(tick);
     // Three painted frames were enough to cover the delayed material commit in
     // the physical-device recording without adding a perceptible modal pause.
     const beginOpening = frames => {
@@ -665,6 +666,16 @@ const lightbox = (() => {
     // Continue from the amount already revealed; do not restore the blur first.
     closingBackgroundPresence=backgroundPresence();
     closingHoldUntil=0;
+    // Landing uses its own damping (1 = critically damped) so every spring
+    // decelerates into the slot rather than being clamped there at speed.
+    const landingDamping=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--lb-landing-damping'))||1;
+    const landingFriction=Math.max(1,landingDamping/CONFIG.damping);
+    progress.friction=landingFriction;
+    slides.forEach((slide,i)=> {
+      slide.entrance.friction*=landingFriction;
+      const o=slide.origin, t=closingTargets[i];
+      slide.travel=Math.max(Math.abs(t.x-o.x),Math.abs(t.y-o.y),Math.abs(t.w-o.w),Math.abs(t.h-o.h),1);
+    });
     state='closing'; pointer=null; progress.to(0);
     for(const slide of slides) slide.entrance.to(0);
     root.classList.remove('is-open');
@@ -686,6 +697,7 @@ const lightbox = (() => {
         });
       }
       if(s.oldHidden!==null) s.el.setAttribute('aria-hidden',s.oldHidden);
+      mediaPress.get(s.el)?.land();
     }
     slides=[]; root.hidden=true;
     if(backgroundAriaHidden===null) background.removeAttribute('aria-hidden');
@@ -716,19 +728,21 @@ const lightbox = (() => {
         if(slide.entrance.x>=1) slide.entrance.set(1);
       }
     }
-    if(state==='closing') for(const slide of slides) if(slide.entrance.x<=0) slide.entrance.set(0);
+    if(state==='closing') for(const slide of slides)
+      if(slide.entrance.x<=0||slide.entrance.x*slide.travel<.25) slide.entrance.set(0);
     render();
     // Clamp at the first target crossing so the spring cannot bounce back into
     // view. Keep the composited slide in its exact slot for one short settling
     // beat before returning ownership to the moving carousel.
     if(state==='opening'&&progress.x>=1) progress.set(1);
-    if(state==='closing'&&progress.x<=0) progress.set(0);
+    if(state==='closing'&&progress.x<=.002) progress.set(0);
     if (state==='opening'&&progress.x===1&&slides.every(slide=>slide.entrance.x>=1)) {
       for(const slide of slides) slide.entrance.set(1); render(); state='open';
     }
     if (state==='closing'&&progress.x===0&&slides.every(slide=>slide.entrance.x<=0)) {
       render();
-      if(!closingHoldUntil) closingHoldUntil=performance.now()+(reducedMotion.matches?0:CONFIG.carouselLandingHold*1000);
+      const hold=slides.some(slide=>slide.el.closest('[data-carousel]'))&&!reducedMotion.matches;
+      if(!closingHoldUntil) closingHoldUntil=performance.now()+(hold?CONFIG.carouselLandingHold*1000:0);
       if(performance.now()>=closingHoldUntil) finish();
     }
   }
@@ -821,9 +835,52 @@ function accessibleMedia(el,i) {
     if(e.key==='Enter'||e.key===' ') { e.preventDefault(); lightbox.open(el); }
   });
 }
+// Hover lifts and press pushes below rest, each on its own spring so a press
+// mid-hover keeps its velocity. Distances are pixels per edge, converted per
+// tile so a 900px hero and a 300px tile move alike. Tuned with ?press.
+const mediaPress=new WeakMap();
+function setupMediaPress(el) {
+  const fine=matchMedia('(hover: hover) and (pointer: fine)');
+  const token=name=>parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name));
+  let size=1, hovered=false, pressed=false, x=1, v=0, target=1, running=false;
+  new ResizeObserver(([entry])=> {
+    size=Math.max(entry.contentRect.width,entry.contentRect.height,1); retarget();
+  }).observe(el);
+  const tick=dt=> {
+    const phase=pressed?'press':'hover';
+    const w=2*Math.PI/token(`--media-${phase}-response`), zeta=token(`--media-${phase}-damping`);
+    const steps=Math.ceil(dt*240), h=dt/Math.max(1,steps);
+    for(let i=0;i<steps;i++) { v+=(-w*w*(x-target)-2*zeta*w*v)*h; x+=v*h; }
+    if(Math.abs(x-target)<.00005&&Math.abs(v)<.0005) { x=target; v=0; tickers.delete(tick); running=false; }
+    el.style.scale=x===1?'':x;
+  };
+  function start() { if(!running&&(x!==target||v!==0)) { running=true; tickers.add(tick); } }
+  function retarget() {
+    if(el.classList.contains('in-lb')) { x=target=1; v=0; el.style.scale=''; return; }
+    target=pressed?1-2*token('--media-press-shrink')/size
+      :hovered&&fine.matches?1+2*token('--media-hover-grow')/size:1;
+    if(reducedMotion.matches) { x=target=1; v=0; el.style.scale=''; return; }
+    start();
+  }
+  mediaPress.set(el,{
+    // The lightbox measures the tile's layout box; drop any hover/press scale
+    // first so the modal copy and the tile's clip path share one size.
+    reset() { hovered=pressed=false; x=target=1; v=0; el.style.scale=''; },
+    // Back in the page, pick up hover if the pointer is still over the tile.
+    land() { hovered=el.matches(':hover'); pressed=false; retarget(); },
+  });
+  const set=(key,value)=> { if(key==='hover') hovered=value; else pressed=value; retarget(); };
+  el.addEventListener('pointerenter',e=> { if(e.pointerType!=='touch') set('hover',true); });
+  el.addEventListener('pointerleave',()=> { hovered=false; set('press',false); });
+  el.addEventListener('pointerdown',e=> { if(e.isPrimary&&e.button===0) set('press',true); });
+  ['pointerup','pointercancel','keyup'].forEach(type=>el.addEventListener(type,()=>set('press',false)));
+  el.addEventListener('keydown',e=> { if(e.key===' ') set('press',true); });
+}
 document.querySelectorAll('[data-lightbox]').forEach((el,i)=> {
   accessibleMedia(el,i);
-  if(!el.closest('[data-carousel]')) el.addEventListener('click',()=>lightbox.open(el));
+  if(el.closest('[data-carousel]')) return;
+  el.addEventListener('click',()=>lightbox.open(el));
+  if(el.matches('.media')) setupMediaPress(el);
 });
 
 function setupLightboxTuner() {
@@ -895,8 +952,7 @@ if (showLightboxTuner) setupLightboxTuner();
 // Width tuning: add ?widths to the article URL, or to the host page URL when
 // the article is embedded. Values are live CSS tokens and are not persisted.
 function setupWidthTuner() {
-  const root=document.documentElement;
-  const settings=[
+  setupTokenTuner('Width tuning','width-tuner',[
     ['--content-max','Prose',480,800,10,'px'],
     ['--media-max','Media',560,1000,10,'px'],
     ['--media-wide-max','Wide / hero',700,1200,10,'px'],
@@ -904,14 +960,29 @@ function setupWidthTuner() {
     ['--media-compact-max','Compact',200,400,1,'px'],
     ['--tall-media-viewport-share','Tall media height',0.4,1,0.01,''],
     ['--carousel-viewport-share','Carousel height',0.3,1,0.01,''],
-  ];
+  ]);
+}
+// Media hover/press tuning: add ?press to the article or host page URL.
+function setupPressTuner() {
+  setupTokenTuner('Media press','press-tuner',[
+    ['--media-hover-grow','Hover grow (px/edge)',0,16,0.5,''],
+    ['--media-press-shrink','Press shrink (px/edge)',0,24,0.5,''],
+    ['--media-hover-response','Hover / release response (s)',0.05,1,0.01,''],
+    ['--media-hover-damping','Hover / release damping',0.3,1.5,0.01,''],
+    ['--media-press-response','Press response (s)',0.05,1,0.01,''],
+    ['--media-press-damping','Press damping',0.3,1.5,0.01,''],
+    ['--lb-landing-damping','Lightbox landing damping',0.6,2,0.01,''],
+  ]);
+}
+function setupTokenTuner(title,className,settings) {
+  const root=document.documentElement;
   const defaults=Object.fromEntries(settings.map(([token])=>
     [token,parseFloat(getComputedStyle(root).getPropertyValue(token))]));
   const panel=document.createElement('details');
-  panel.className='lightbox-tuner width-tuner'; panel.open=true;
-  panel.innerHTML=`<summary>Width tuning</summary>`+settings.map(([token,label,min,max,step])=>
+  panel.className=`lightbox-tuner ${className}`; panel.open=true;
+  panel.innerHTML=`<summary>${title}</summary>`+settings.map(([token,label,min,max,step])=>
     `<label>${label} <output></output><button class="setting-reset" type="button" data-reset="${token}" aria-label="Reset ${label}" title="Reset ${label}">↺</button><input name="${token}" type="range" min="${min}" max="${max}" step="${step}"></label>`
-  ).join('')+`<button class="tuner-reset" type="button">Reset</button>`;
+  ).join('')+`<button class="tuner-reset" type="button">Reset</button><button class="tuner-reset tuner-copy" type="button">Copy values</button>`;
   function apply(token,value) {
     const suffix=settings.find(setting=>setting[0]===token)[5];
     if(value===defaults[token]) root.style.removeProperty(token);
@@ -923,7 +994,11 @@ function setupWidthTuner() {
   panel.addEventListener('input',e=> { if(e.target.name in defaults) apply(e.target.name,Number(e.target.value)); });
   panel.addEventListener('click',e=> {
     const token=e.target.dataset?.reset;
-    if(token) apply(token,defaults[token]);
+    if(e.target.classList.contains('tuner-copy')) {
+      const text=settings.map(([name,,,,,suffix])=>`${name}: ${panel.querySelector(`[name="${name}"]`).value}${suffix};`).join('\n');
+      navigator.clipboard?.writeText(text).then(()=> { e.target.textContent='Copied'; setTimeout(()=>e.target.textContent='Copy values',1200); });
+    }
+    else if(token) apply(token,defaults[token]);
     else if(e.target.classList.contains('tuner-reset')) for(const name in defaults) apply(name,defaults[name]);
   });
   document.body.append(panel);
@@ -932,7 +1007,12 @@ function setupWidthTuner() {
 {
   let hostSearch='';
   try { if(parent!==window) hostSearch=parent.location.search; } catch {}
-  if([location.search,hostSearch].some(search=>new URLSearchParams(search).has('widths'))) setupWidthTuner();
+  const hasFlag=flag=>[location.search,hostSearch].some(search=>new URLSearchParams(search).has(flag));
+  if(hasFlag('widths')) setupWidthTuner();
+  // Local dev only, like the iteration tuner: ?press never shows on the live site.
+  const local=location.protocol==='file:'||['localhost','127.0.0.1','::1'].includes(location.hostname)||
+    location.hostname.endsWith('.local')||/^(10|192\.168)\./.test(location.hostname);
+  if(hasFlag('press')&&local) setupPressTuner();
 }
 
 function setupCarouselTuner() {
