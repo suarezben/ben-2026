@@ -346,6 +346,23 @@ const MOBILE_SHELL_STAGGER_CHILD = {
   },
 } as const;
 
+/**
+ * Desktop first load: play the page-surface blur + fade (same as a Work/Writing swap).
+ * Compare against a static first paint with `?loadblur=0`.
+ */
+const DESKTOP_FIRST_LOAD_BLUR =
+  typeof window === 'undefined' ||
+  new URLSearchParams(window.location.search).get('loadblur') !== '0';
+/** First-load reveal length in seconds. Tune with `?loadblurms=`. */
+const DESKTOP_LOAD_REVEAL_S =
+  (typeof window === 'undefined'
+    ? NaN
+    : Number(new URLSearchParams(window.location.search).get('loadblurms')) / 1000) || 1;
+const DESKTOP_LOAD_REVEAL_TRANSITION = {
+  duration: DESKTOP_LOAD_REVEAL_S,
+  ease: [0.22, 1, 0.36, 1],
+} as const;
+
 /** Mobile chip rail: spring `scrollLeft` when snapping to the active tab (cancelled on user drag). */
 const CHIP_RAIL_SPRING = {
   type: 'spring' as const,
@@ -599,13 +616,48 @@ export default function App() {
     const id = window.setTimeout(handleDesktopSurfaceAnimationComplete, 320);
     return () => window.clearTimeout(id);
   }, [desktopSurface]);
+  /**
+   * Desktop first load: hold the reveal until two frames after mount. Started at mount, the
+   * fade's time runs out during first-render work and it paints already finished.
+   */
+  const [desktopLoadRevealOpen, setDesktopLoadRevealOpen] = useState(!DESKTOP_FIRST_LOAD_BLUR);
+  const [desktopLoadRevealDone, setDesktopLoadRevealDone] = useState(!DESKTOP_FIRST_LOAD_BLUR);
+  useEffect(() => {
+    if (desktopLoadRevealOpen) return;
+    let id = requestAnimationFrame(() => {
+      id = requestAnimationFrame(() => setDesktopLoadRevealOpen(true));
+    });
+    return () => cancelAnimationFrame(id);
+  }, [desktopLoadRevealOpen]);
+  useEffect(() => {
+    if (!desktopLoadRevealOpen || desktopLoadRevealDone) return;
+    const id = window.setTimeout(
+      () => setDesktopLoadRevealDone(true),
+      Math.ceil(DESKTOP_LOAD_REVEAL_S * 1000) + 80
+    );
+    return () => window.clearTimeout(id);
+  }, [desktopLoadRevealOpen, desktopLoadRevealDone]);
+  /** A Work/Writing switch during the reveal uses the normal swap timing, not the slow load fade. */
+  const desktopLoadRevealViewRef = useRef(siteView);
+  useLayoutEffect(() => {
+    if (siteView === desktopLoadRevealViewRef.current) return;
+    setDesktopLoadRevealOpen(true);
+    setDesktopLoadRevealDone(true);
+  }, [siteView]);
+  const desktopSurfaceTransition = (duration: number) =>
+    desktopLoadRevealDone
+      ? { duration, ease: [0.23, 1, 0.32, 1] as const }
+      : DESKTOP_LOAD_REVEAL_TRANSITION;
   const desktopSurfaceHidden = {
     opacity: 0,
     filter: shouldReduceMotion ? 'none' : 'blur(3px)',
   };
   const desktopSurfaceMotion = {
-    initial: desktopSurfaceHasSwappedRef.current ? desktopSurfaceHidden : false,
-    animate: desktopSurface.visible
+    initial:
+      DESKTOP_FIRST_LOAD_BLUR || desktopSurfaceHasSwappedRef.current
+        ? desktopSurfaceHidden
+        : false,
+    animate: desktopSurface.visible && desktopLoadRevealOpen
       ? { opacity: 1, filter: 'blur(0px)' }
       : desktopSurfaceHidden,
     onUpdate: renderPresenceFade,
@@ -1631,12 +1683,12 @@ export default function App() {
               data-work-hold
               aria-hidden={siteView !== 'work'}
               onUpdate={renderPresenceFade}
-              initial={false}
+              initial={DESKTOP_FIRST_LOAD_BLUR ? desktopSurfaceHidden : false}
               animate={{
-                opacity: siteView === 'work' ? 1 : 0,
-                filter: siteView === 'work' ? 'blur(0px)' : 'blur(8px)',
+                opacity: siteView === 'work' && desktopLoadRevealOpen ? 1 : 0,
+                filter: siteView === 'work' && desktopLoadRevealOpen ? 'blur(0px)' : 'blur(8px)',
               }}
-              transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
+              transition={desktopSurfaceTransition(0.18)}
               // Keep the exiting chips paintable, but take them out of flow in
               // the same commit as the view change. AnimatePresence retained
               // their 36px layout height until exit completion, which moved the
@@ -1662,7 +1714,7 @@ export default function App() {
               <motion.div
                 key="desktop-work"
                 {...desktopSurfaceMotion}
-                transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
+                transition={desktopSurfaceTransition(0.18)}
               >
                 {/* Horizontal Scrolling Projects — markup lives in `desktop-carousel-rail.tsx` so JSX can’t break the whole app. */}
                 <div data-work-hold>
@@ -1689,7 +1741,7 @@ export default function App() {
               <motion.div
                 key="desktop-writing"
                 {...desktopSurfaceMotion}
-                transition={{ duration: 0.24, ease: [0.23, 1, 0.32, 1] }}
+                transition={desktopSurfaceTransition(0.24)}
                 // Anchor the Writing surface to the desktop shell, not the
                 // header-dependent Work content slot. That keeps the outgoing
                 // article fixed while the taller Work header returns.
