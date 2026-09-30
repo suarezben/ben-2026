@@ -522,7 +522,11 @@ export default function App() {
   const writingLightboxVisible = writingLightboxProgress > 0.001;
   useEffect(() => {
     if (window.location.pathname.replace(/\/+$/, '') === LEGACY_WRITING_PATH) {
-      window.history.replaceState({ siteView: 'writing' }, '', WRITING_PATH);
+      window.history.replaceState(
+        { siteView: 'writing' },
+        '',
+        WRITING_PATH + window.location.search
+      );
     }
   }, []);
   useEffect(() => {
@@ -754,7 +758,8 @@ export default function App() {
     const basePath = import.meta.env.BASE_URL;
     const nextPath = nextView === 'writing' ? WRITING_PATH : basePath;
     if (window.location.pathname !== nextPath) {
-      window.history.pushState({ siteView: nextView }, '', nextPath);
+      // Keep query params (reveal/width tuners, debug flags) across view changes.
+      window.history.pushState({ siteView: nextView }, '', nextPath + window.location.search);
     }
     requestAnimationFrame(() => {
       mobileScrollContainerRef.current?.scrollTo({ top: 0, behavior: 'instant' });
