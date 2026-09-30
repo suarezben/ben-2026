@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { SWAP_BLUR_PX, SWAP_S } from '../lib/reveal-tunables';
 import {
   DEFAULT_SIGNATURE_MOTION,
   type SignatureMotionSettings,
@@ -25,8 +26,10 @@ type IntroNameHeadingProps = {
   motionSettings?: SignatureMotionSettings;
 };
 
+const HEADER_SWAP_BLUR = `blur(${SWAP_BLUR_PX}px)`;
+
 const BLUR_SWAP_TRANSITION = {
-  duration: 0.2,
+  duration: SWAP_S,
   ease: [0.23, 1, 0.32, 1] as [number, number, number, number],
 };
 
@@ -273,7 +276,7 @@ export function IntroNameHeading({
             aria-hidden={!showIntroText}
             animate={{
               opacity: showIntroText ? 1 : 0,
-              filter: showIntroText ? 'blur(0px)' : 'blur(7px)',
+              filter: showIntroText ? 'blur(0px)' : HEADER_SWAP_BLUR,
             }}
             transition={{
               opacity: BLUR_SWAP_TRANSITION,
@@ -321,9 +324,9 @@ export function IntroNameHeading({
             <motion.p
               key="intro-location"
               data-work-hold={isMobile ? undefined : ''}
-              initial={{ opacity: 0, filter: 'blur(7px)' }}
+              initial={{ opacity: 0, filter: HEADER_SWAP_BLUR }}
               animate={{ opacity: 1, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, filter: 'blur(7px)' }}
+              exit={{ opacity: 0, filter: HEADER_SWAP_BLUR }}
               transition={BLUR_SWAP_TRANSITION}
               className={
                 isMobile

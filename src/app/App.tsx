@@ -20,6 +20,13 @@ import { queueMediaPrefetch, prioritizeMediaPrefetch } from './lib/prefetch-medi
 import { LYFT_DESKTOP_RAIL_WIDTH_SCALE } from './lib/desktop-rail-layout';
 import { renderPresenceFade } from './lib/presence-fade';
 import {
+  DESKTOP_FIRST_LOAD_BLUR,
+  LOAD_REVEAL_S,
+  LOAD_REVEAL_TRANSITION,
+  SWAP_BLUR_PX,
+  SWAP_S,
+} from './lib/reveal-tunables';
+import {
   DEFAULT_SIGNATURE_MOTION,
   LEGACY_SIGNATURE_MOTION_STORAGE_KEY,
   SIGNATURE_MOTION_STORAGE_KEY,
@@ -342,25 +349,8 @@ const MOBILE_SHELL_STAGGER_CHILD = {
     opacity: 1,
     filter: 'blur(0px)',
     pointerEvents: 'auto' as const,
-    transition: { duration: 0.42, ease: [0.22, 1, 0.36, 1] },
+    transition: LOAD_REVEAL_TRANSITION,
   },
-} as const;
-
-/**
- * Desktop first load: play the page-surface blur + fade (same as a Work/Writing swap).
- * Compare against a static first paint with `?loadblur=0`.
- */
-const DESKTOP_FIRST_LOAD_BLUR =
-  typeof window === 'undefined' ||
-  new URLSearchParams(window.location.search).get('loadblur') !== '0';
-/** First-load reveal length in seconds. Tune with `?loadblurms=`. */
-const DESKTOP_LOAD_REVEAL_S =
-  (typeof window === 'undefined'
-    ? NaN
-    : Number(new URLSearchParams(window.location.search).get('loadblurms')) / 1000) || 1;
-const DESKTOP_LOAD_REVEAL_TRANSITION = {
-  duration: DESKTOP_LOAD_REVEAL_S,
-  ease: [0.22, 1, 0.36, 1],
 } as const;
 
 /** Mobile chip rail: spring `scrollLeft` when snapping to the active tab (cancelled on user drag). */
@@ -613,7 +603,10 @@ export default function App() {
   /** Fallback when the fade-out has nothing to animate (surface toggled away while still at opacity 0). */
   useEffect(() => {
     if (desktopSurface.visible) return;
-    const id = window.setTimeout(handleDesktopSurfaceAnimationComplete, 320);
+    const id = window.setTimeout(
+      handleDesktopSurfaceAnimationComplete,
+      Math.max(320, SWAP_S * 1000 + 80)
+    );
     return () => window.clearTimeout(id);
   }, [desktopSurface]);
   /**
@@ -633,7 +626,7 @@ export default function App() {
     if (!desktopLoadRevealOpen || desktopLoadRevealDone) return;
     const id = window.setTimeout(
       () => setDesktopLoadRevealDone(true),
-      Math.ceil(DESKTOP_LOAD_REVEAL_S * 1000) + 80
+      Math.ceil(LOAD_REVEAL_S * 1000) + 80
     );
     return () => window.clearTimeout(id);
   }, [desktopLoadRevealOpen, desktopLoadRevealDone]);
@@ -644,13 +637,20 @@ export default function App() {
     setDesktopLoadRevealOpen(true);
     setDesktopLoadRevealDone(true);
   }, [siteView]);
-  const desktopSurfaceTransition = (duration: number) =>
+  const desktopSurfaceTransition = () =>
     desktopLoadRevealDone
-      ? { duration, ease: [0.23, 1, 0.32, 1] as const }
-      : DESKTOP_LOAD_REVEAL_TRANSITION;
+      ? { duration: SWAP_S, ease: [0.23, 1, 0.32, 1] as const }
+      : LOAD_REVEAL_TRANSITION;
   const desktopSurfaceHidden = {
     opacity: 0,
-    filter: shouldReduceMotion ? 'none' : 'blur(3px)',
+    filter: shouldReduceMotion ? 'none' : `blur(${SWAP_BLUR_PX}px)`,
+  };
+  /** Mobile Work/Writing swap: same blur + fade as desktop; filter clears at rest so iOS doesn't keep a filtered layer. */
+  const mobileSurfaceHidden = desktopSurfaceHidden;
+  const mobileSurfaceVisible = {
+    opacity: 1,
+    filter: shouldReduceMotion ? 'none' : 'blur(0px)',
+    transitionEnd: { filter: 'none' },
   };
   const desktopSurfaceMotion = {
     initial:
@@ -834,7 +834,7 @@ export default function App() {
    */
   useEffect(() => {
     if (!isMobile || !mobileShellRevealOpen || mobileShellRevealCompleteRef.current) return;
-    const totalMs = Math.ceil((0.02 + 2 * 0.05 + 0.42 + 0.08) * 1000);
+    const totalMs = Math.ceil((0.02 + 2 * 0.05 + LOAD_REVEAL_S + 0.08) * 1000);
     const id = window.setTimeout(() => {
       if (mobileShellRevealCompleteRef.current) return;
       mobileShellRevealCompleteRef.current = true;
@@ -1661,7 +1661,11 @@ export default function App() {
                     : '0 -48px 0 0 #fff',
             }}
           >
-            <div
+            <motion.div
+              // First load: blurs in with the page content below it.
+              initial={DESKTOP_FIRST_LOAD_BLUR ? desktopSurfaceHidden : false}
+              animate={desktopLoadRevealOpen ? mobileSurfaceVisible : desktopSurfaceHidden}
+              transition={LOAD_REVEAL_TRANSITION}
               className={`font-['Alliance_No.1',sans-serif] font-light leading-[normal] not-italic text-[20px] lg:text-[25px] xl:text-[30px] text-site-ink tracking-[-1px] lg:tracking-[-1.21px] xl:tracking-[-1.46px] ${
                 siteView === 'writing' ? 'writing-header-content-offset' : ''
               } ${
@@ -1676,7 +1680,7 @@ export default function App() {
                 onWorkClick={() => navigateToView('work')}
                 motionSettings={resolvedSignatureMotionSettings}
               />
-            </div>
+            </motion.div>
 
             {/* Desktop chips: one row until the content edge, then natural wrap (mobile stays horizontal scroll). */}
             <motion.div
@@ -1688,7 +1692,7 @@ export default function App() {
                 opacity: siteView === 'work' && desktopLoadRevealOpen ? 1 : 0,
                 filter: siteView === 'work' && desktopLoadRevealOpen ? 'blur(0px)' : 'blur(8px)',
               }}
-              transition={desktopSurfaceTransition(0.18)}
+              transition={desktopSurfaceTransition()}
               // Keep the exiting chips paintable, but take them out of flow in
               // the same commit as the view change. AnimatePresence retained
               // their 36px layout height until exit completion, which moved the
@@ -1714,7 +1718,7 @@ export default function App() {
               <motion.div
                 key="desktop-work"
                 {...desktopSurfaceMotion}
-                transition={desktopSurfaceTransition(0.18)}
+                transition={desktopSurfaceTransition()}
               >
                 {/* Horizontal Scrolling Projects — markup lives in `desktop-carousel-rail.tsx` so JSX can’t break the whole app. */}
                 <div data-work-hold>
@@ -1741,7 +1745,7 @@ export default function App() {
               <motion.div
                 key="desktop-writing"
                 {...desktopSurfaceMotion}
-                transition={desktopSurfaceTransition(0.24)}
+                transition={desktopSurfaceTransition()}
                 // Anchor the Writing surface to the desktop shell, not the
                 // header-dependent Work content slot. That keeps the outgoing
                 // article fixed while the taller Work header returns.
@@ -1847,10 +1851,10 @@ export default function App() {
               <motion.div
                 key="mobile-work"
                 onUpdate={renderPresenceFade}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
+                initial={mobileSurfaceHidden}
+                animate={mobileSurfaceVisible}
+                exit={mobileSurfaceHidden}
+                transition={{ duration: SWAP_S, ease: [0.23, 1, 0.32, 1] }}
               >
                 {/* Chip rail: sticky to this scrollport (below safe-area inset on the shell). */}
                 <motion.div
@@ -1949,10 +1953,19 @@ export default function App() {
               <motion.div
                 key="mobile-writing"
                 onUpdate={renderPresenceFade}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
+                initial={mobileSurfaceHidden}
+                // First load: joins the shell stagger after the header (Work's pieces are stagger children).
+                animate={
+                  mobileShellRevealOpen
+                    ? mobileSurfaceVisible
+                    : { opacity: 0, filter: shouldReduceMotion ? 'none' : 'blur(10px)' }
+                }
+                exit={mobileSurfaceHidden}
+                transition={
+                  mobileShellRevealCompleteRef.current
+                    ? { duration: SWAP_S, ease: [0.23, 1, 0.32, 1] }
+                    : { ...MOBILE_SHELL_STAGGER_CHILD.visible.transition, delay: 0.02 + 0.05 }
+                }
                 className={
                   `absolute inset-0 min-h-0 ${writingLightboxVisible ? 'z-30' : 'z-10'}`
                 }
