@@ -21,6 +21,12 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
+# Writing post: same app shell with its own share/SEO tags (see emitWritingPostHtml in vite.config.ts).
+[[redirects]]
+  from = "/writings/liquid-acrylic-shader"
+  to = "/writings/liquid-acrylic-shader.html"
+  status = 200
+
 # SPA fallback (safe if you add client routes or deep links later)
 [[redirects]]
   from = "/*"

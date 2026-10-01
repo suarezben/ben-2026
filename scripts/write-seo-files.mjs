@@ -19,6 +19,11 @@ if (base) {
     <changefreq>monthly</changefreq>
     <priority>1</priority>
   </url>
+  <url>
+    <loc>${base}/writings/liquid-acrylic-shader</loc>
+    <lastmod>2026-09-29</lastmod>
+    <priority>0.8</priority>
+  </url>
 </urlset>
 `;
   fs.writeFileSync(sitemapPath, sitemap, 'utf8');

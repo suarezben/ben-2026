@@ -7,6 +7,7 @@
 <meta name="build-id" content="v17-group-rubber-band">
 <title>AI helped me build something I actually wanted to print.</title>
 <meta name="description" content="Experiments with liquid acrylic shaders, playful physics, and a canvas of emotions.">
+<link rel="canonical" href="https://bensuarez.com/writings/liquid-acrylic-shader">
 <script>
   const embeddedVariant = new URLSearchParams(location.search).get('embedded');
   if (embeddedVariant) document.documentElement.dataset.embedded = embeddedVariant;
@@ -37,12 +38,12 @@
     <p>TL;DR: I hadn’t felt very inspired by the way AI was changing my design workflow. Channeling it towards creative unlocks changed my perspective, got me excited about my career again, and brought me back to what drew me to design in the first place: making useful and <em>beautiful</em> things.</p>
   </aside>
 
-  <h2 class="section-title">Part 1</h2>
+  <h2 class="section-title">Art for my living room</h2>
 
   <div class="body">
     <p>I was never inherently interested in technology or computers as a kid, unlike many people I’ve worked with in tech, who talk about building computers, writing software when they were young, etc. However, like many <em>designers</em> in tech, I went to school for graphic design. Computers were mostly just a means to an end for me, a way to make cool stuff that I otherwise couldn’t do by hand.</p>
-    <p>Design attracted me because in addition to utility, I wanted to make things that were visually interesting, beautiful, and that elicited strong feelings or emotions in people. There are opportunities to do this designing software, for sure, but they had felt few and far between for me lately with such a focus on getting features out the door.</p>
-    <p>Shaders have always been something I wanted to add to my toolkit, but I never took the time to <a href="https://thebookofshaders.com/" target="_blank" rel="noopener noreferrer">learn much about them</a>. With this new technology at my disposal, it felt like a good time to try them out.</p>
+    <p>Design attracted me because in addition to utility, I wanted to make things that were visually interesting, beautiful, and that elicited strong feelings or emotions in people. There are opportunities to do this designing software, but they have felt few and far between for me lately with such a focus on getting features out the door.</p>
+    <p>Procedural shaders have always been something I wanted to add to my toolkit, but I never took the time to <a href="https://thebookofshaders.com/" target="_blank" rel="noopener noreferrer">learn much about them</a>. With this new technology at my disposal, it felt like a good time to try them out.</p>
     <p>I’d been working on trying to make art for my living room using watered-down liquid acrylic that soaks into a wet canvas. I hadn’t had much success achieving the look and feel I was going for.</p>
   </div>
 
@@ -57,7 +58,7 @@
     <p>I thought it would be an interesting challenge to digitally reproduce these physics and an opportunity to play with <a href="https://developer.apple.com/metal/" target="_blank" rel="noopener noreferrer">Apple’s Metal</a> for the first time.</p>
   </div>
 
-  <h2 class="section-title">Part 2</h2>
+  <h2 class="section-title">Simulating ink</h2>
 
   <div class="body">
     <p>My first pass was creating a canvas that simulated liquid acrylic ink on a wet surface and reacted to device orientation using the gyroscope.</p>
@@ -100,7 +101,7 @@
   </figure>
 
   <div class="body">
-    <p>One effect I really like is what happens when the ink has a lot of momentum. The front edge can’t stay smooth, because any spot on the edge that’s a little thicker flows a little faster, pulls ahead of the ink around it, and keeps pulling away until the edge splits into these “fingers.” I later learned the actual name for this phenomenon is indeed “<a href="https://en.wikipedia.org/wiki/Saffman%E2%80%93Taylor_instability" target="_blank" rel="noopener noreferrer">fingering instability</a>.”</p>
+    <p>An effect I like is what happens when the ink has a lot of momentum. The front edge can’t stay smooth, because any spot on the edge that’s a little thicker flows a little faster, pulls ahead of the ink around it, and keeps pulling away until the edge splits into these “fingers.” I later learned the actual name for this phenomenon is indeed “<a href="https://en.wikipedia.org/wiki/Saffman%E2%80%93Taylor_instability" target="_blank" rel="noopener noreferrer">fingering instability</a>.”</p>
   </div>
 
   <figure class="media-block" data-lightbox-group="fingering">
@@ -116,7 +117,7 @@
   </figure>
 
   <div class="body">
-    <p>I had a lot of fun tweaking the feel and figuring out what the abstractions should be:</p>
+    <p>I had fun tweaking the feel and figuring out what the abstractions should be:</p>
     <ul>
       <li><em>How wet the paint is</em></li>
       <li><em>How fast a fresh wash spreads</em></li>
@@ -139,7 +140,7 @@
     <p>This was surprisingly fun to play with. When I was bored or waiting in line, I’d open it up and play with the ink, trying to make new patterns and stains.</p>
   </div>
 
-  <h2 class="section-title">Part 3</h2>
+  <h2 class="section-title">Ink as a UI material?</h2>
 
   <div class="body">
     <p>Could this have a practical application as a UI material? I’d been noodling on a few mental-health-focused apps, which was a bit of the inspiration for this particular look and feel.</p>
@@ -158,11 +159,10 @@
   </figure>
 
   <div class="body">
-    <p>I liked that the app felt alive. It responded not just to what I intentionally did, but to the incidental reality of how I was using it.</p>
-    <p><em>If I leaned or lay down, the ink shifted and dripped with me.</em></p>
-    <p><em>If I paused to read, it had time to soak in and leave stains and <a href="https://en.wikipedia.org/wiki/Coffee_ring_effect" target="_blank" rel="noopener noreferrer">tide lines</a>.</em></p>
-    <p><em>If I looked away, it kept moving, leaving a little record of the time that had passed.</em></p>
-    <p>Even when I wasn’t consciously interacting with it, I was still leaving a trace of myself behind.</p>
+    <p>I like that the app feels alive. It responds not just to what I intentionally do, but to the incidental reality of how I use it.</p>
+    <p><em>If I lean or lay down, the ink shifts and drips with me.</em></p>
+    <p><em>If I pause to read, it has time to soak in and leave stains and <a href="https://en.wikipedia.org/wiki/Coffee_ring_effect" target="_blank" rel="noopener noreferrer">tide lines</a>.</em></p>
+    <p><em>If I look away, it keeps moving, leaving a little record of the time that has passed.</em></p>
   </div>
 
   <!-- Part 2 card 2: both streak variants, treated as ONE media -->
@@ -178,7 +178,7 @@
 
   <div class="body">
     <p>What about interactions and motion?</p>
-    <p>If a card moved, could the ink inside it slosh around as if invisible bounds were <em>pushing</em> the ink around a canvas?</p>
+    <p>If a card moves, could the ink inside it slosh around as if invisible bounds are <em>pushing</em> the ink around a canvas?</p>
   </div>
 
   <figure class="media-block" data-lightbox-group="shape-playground">
@@ -220,7 +220,7 @@
     <p>There’s a lot more to explore and pressure test for practical applications, but I wanted to move on and test freeing the ink from hard bounds while still using it as the interface material.</p>
   </div>
 
-  <h2 class="section-title">Part 4</h2>
+  <h2 class="section-title">Mood picker</h2>
 
   <div class="body">
     <p>I’ve always wanted to design a mood picker app.</p>
@@ -250,7 +250,7 @@
   </figure>
 
   <div class="body">
-    <p>I really wanted to push the physics and make the app feel alive and organic.</p>
+    <p>I wanted to push the physics and make the app feel alive and organic.</p>
   </div>
 
   <figure class="media-block">
@@ -278,7 +278,7 @@
   </figure>
 
   <div class="body">
-    <p>For a mood picker, being fun to use felt practical. If I enjoyed using it, I was more likely to make it a habit.</p>
+    <p>For a mood picker, being fun to use feels practical. If I enjoy using it, I am more likely to make it a habit.</p>
   </div>
 
   <figure class="media-block">
@@ -296,13 +296,13 @@
   </figure>
 
   <div class="body">
-    <p>That was the extent of what I built for this one. Figured I’d build out the tracking part later. I wanted to move on to adding bounds to the ink once again.</p>
+    <p>This is the extent of what I’ve built for this one. Figured I’d build out the tracking part later. I wanted to move on to adding bounds to the ink once again.</p>
   </div>
 
-  <h2 class="section-title">Part 5</h2>
+  <h2 class="section-title">A gallery of moods</h2>
 
   <div class="body">
-    <p>What if selecting moods slapped ink onto a canvas? I liked the idea of being able to browse a gallery of my past moods.</p>
+    <p>I had another variation of the mood picker app in mind - what if selecting moods slapped ink onto a canvas? I liked the idea of being able to browse a visual gallery of my emotion history.</p>
   </div>
 
   <figure class="media-block">
@@ -340,9 +340,9 @@
   </figure>
 
   <div class="body">
-    <p>What will become of all this? I’m not really sure, but it made me optimistic and even excited about my future in design. It reconnected me with what I value in my work and where I want to spend my energy.</p>
-    <p>The process had plenty of ups and downs. Sometimes I felt maximally powerful. Other times I wanted to chuck my computer. I’ve all-caps-yelled at every model under the sun.</p>
-    <p>The bigger lesson was to stay open-minded and fight my own curmudgeonliness in response to change. I might write more about what worked and what didn’t if folks would find that useful.</p>
+    <p>What will become of this? I’m not sure, but it made me optimistic and even excited about my future in design. It reconnected me with what I value in my work and where I want to spend my energy: more focus on form and feeling, and how they can make function more effective.</p>
+    <p>The process had plenty of ups and downs. Sometimes I felt maximally powerful. Other times I wanted to chuck my computer. I still all-caps-yell at my agents daily.</p>
+    <p>The bigger lesson was to stay open-minded and fight my own curmudgeonliness towards change. I might write more about my actual workflow, what worked and what didn’t, new stuff I tried, etc.</p>
     <p>Anyway, I’ve found a lot of relief in staying curious and hope y’all do as well!</p>
   </div>
 

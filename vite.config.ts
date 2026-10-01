@@ -142,9 +142,100 @@ function preloadAllianceFontsIfPresent(): Plugin {
   }
 }
 
+/**
+ * The site is an SPA, so every URL serves the homepage's tags. For the writing post,
+ * emit dist/writings/liquid-acrylic-shader.html (same app shell) with its own
+ * title, description, canonical, and share images. netlify.toml rewrites the post URL
+ * to it ahead of the SPA fallback. Images live in public/share/liquid-acrylic-shader/;
+ * the first og:image is the default preview, the rest are alternates some apps offer.
+ */
+const WRITING_POST = {
+  path: '/writings/liquid-acrylic-shader',
+  title: 'AI helped me build something I actually wanted to print.',
+  description:
+    'Experiments with liquid acrylic shaders, playful physics, and a canvas of emotions.',
+  published: '2026-09-29',
+  images: [
+    { file: '01.jpg', alt: 'Printed watercolor phone designs laid out on a rug' },
+    { file: '02.jpg', alt: 'Liquid acrylic artwork in a backyard' },
+    { file: '03.jpg', alt: 'Burgundy and peach liquid acrylic iteration' },
+    { file: '04.jpg', alt: 'Rose and yellow liquid acrylic iteration' },
+    { file: '05.jpg', alt: 'Navy and pale blue liquid acrylic iteration' },
+  ],
+}
+
+function emitWritingPostHtml(): Plugin {
+  let outDir = 'dist'
+  return {
+    name: 'emit-writing-post-html',
+    apply: 'build',
+    configResolved(config) {
+      outDir = path.resolve(config.root, config.build.outDir)
+    },
+    closeBundle() {
+      const base = (process.env.VITE_SITE_URL || 'https://bensuarez.com').trim().replace(/\/$/, '')
+      const url = `${base}${WRITING_POST.path}`
+      const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
+      let html = fs.readFileSync(path.join(outDir, 'index.html'), 'utf8')
+
+      // Drop homepage-specific tags, then add the post's.
+      html = html
+        .replace(/<title>[\s\S]*?<\/title>/i, `<title>${esc(WRITING_POST.title)}</title>`)
+        .replace(/\s*<meta\s+(name|property)="(description|og:[^"]+|twitter:[^"]+)"[\s\S]*?\/>/gi, '')
+        .replace(/\s*<link rel="canonical"[^>]*\/>/i, '')
+        .replace(/\s*<script type="application\/ld\+json">[\s\S]*?<\/script>/i, '')
+
+      const images = WRITING_POST.images
+        .map(
+          (img) => `
+    <meta property="og:image" content="${base}/share/liquid-acrylic-shader/${img.file}" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="${esc(img.alt)}" />`
+        )
+        .join('')
+      const jsonLd = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'BlogPosting',
+        headline: WRITING_POST.title,
+        description: WRITING_POST.description,
+        datePublished: WRITING_POST.published,
+        url,
+        image: WRITING_POST.images.map((img) => `${base}/share/liquid-acrylic-shader/${img.file}`),
+        author: { '@type': 'Person', name: 'Ben Suarez', url: `${base}/` },
+      }).replace(/</g, '\\u003c')
+      const block = `
+    <meta name="description" content="${esc(WRITING_POST.description)}" />
+    <link rel="canonical" href="${url}" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="Ben Suarez" />
+    <meta property="og:title" content="${esc(WRITING_POST.title)}" />
+    <meta property="og:description" content="${esc(WRITING_POST.description)}" />
+    <meta property="og:url" content="${url}" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="article:published_time" content="${WRITING_POST.published}" />
+    <meta property="article:author" content="Ben Suarez" />${images}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${esc(WRITING_POST.title)}" />
+    <meta name="twitter:description" content="${esc(WRITING_POST.description)}" />
+    <meta name="twitter:image" content="${base}/share/liquid-acrylic-shader/${WRITING_POST.images[0].file}" />
+    <meta name="twitter:image:alt" content="${esc(WRITING_POST.images[0].alt)}" />
+    <script type="application/ld+json">${jsonLd}</script>`
+      html = html.replace(/(\s*)<\/head>/i, `${block}$1</head>`)
+
+      // A flat .html file (not a directory index) so Netlify doesn't 301 to a trailing
+      // slash; netlify.toml rewrites the clean URL to it.
+      const file = path.join(outDir, `${WRITING_POST.path}.html`)
+      fs.mkdirSync(path.dirname(file), { recursive: true })
+      fs.writeFileSync(file, html, 'utf8')
+    },
+  }
+}
+
 export default defineConfig({
   plugins: [
     injectSeoAbsoluteTags(),
+    emitWritingPostHtml(),
     preloadAllianceFontsIfPresent(),
     preloadInterAboveFold(),
     // The React and Tailwind plugins are both required for Make, even if
