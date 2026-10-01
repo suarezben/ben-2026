@@ -21,7 +21,7 @@ if (base) {
   </url>
   <url>
     <loc>${base}/writings/liquid-acrylic-shader</loc>
-    <lastmod>2026-09-29</lastmod>
+    <lastmod>2026-10-01</lastmod>
     <priority>0.8</priority>
   </url>
 </urlset>

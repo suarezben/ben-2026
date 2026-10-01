@@ -154,7 +154,7 @@ const WRITING_POST = {
   title: 'AI helped me build something I actually wanted to print.',
   description:
     'Experiments with liquid acrylic shaders, playful physics, and a canvas of emotions.',
-  published: '2026-09-29',
+  published: '2026-10-01',
   images: [
     { file: '01.jpg', alt: 'Printed watercolor phone designs laid out on a rug' },
     { file: '02.jpg', alt: 'Liquid acrylic artwork in a backyard' },
