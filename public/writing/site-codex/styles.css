@@ -673,7 +673,7 @@ video[poster].is-frame-ready { opacity: 1; }
 .media-outline path {
   fill: none;
   stroke: var(--media-border);
-  stroke-width: 1;
+  stroke-width: var(--outline-width, 1);
   vector-effect: non-scaling-stroke;
   shape-rendering: geometricPrecision;
 }

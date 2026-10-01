@@ -497,6 +497,10 @@ const lightbox = (() => {
       const slideProgress=clamp(slide.entrance.x,0,1);
       const r=lerpRect(from,to,slideProgress);
       slide.wrap.style.transform=`translate3d(${r.x}px,${r.y}px,0) scale(${r.w/slide.base.w})`;
+      // The wrap's scale also scales the outline, so a raster-scaled card lands
+      // with a hairline that jumps to 1px at handoff. Counter-scale the stroke
+      // so it stays one screen pixel for the full flight.
+      if(slide.rasterScale!==1) slide.el.style.setProperty('--outline-width',slide.base.w/r.w);
       slide.wrap.style.zIndex=i===index?'2':'1';
       const returnAngle=slide.oldAngle*(1-slideProgress);
       const returnScale=mix(slide.oldScale,1,slideProgress);
@@ -620,7 +624,11 @@ const lightbox = (() => {
       const oldScale=parseFloat(item.dataset.carouselScale)||1;
       wrap.append(item); stage.append(wrap); item.classList.add('in-lb'); item.tabIndex=-1; item.removeAttribute('aria-hidden');
       item.style.opacity='1';
-      return {el:item,placeholder,wrap,origin:o,base:{w:baseWidth,h:baseHeight},oldTabIndex,oldHidden,oldOpacity,oldTransform,oldAngle,oldScale,
+      // The geometry observer rewrites the clip path a frame late. With a
+      // raster-scaled surface that frame pairs the path with the wrong box
+      // size, so resize the path in the same frame as the reparent.
+      if(rasterScale!==1) smooth(item,baseWidth,baseHeight);
+      return {el:item,placeholder,wrap,origin:o,base:{w:baseWidth,h:baseHeight},rasterScale,oldTabIndex,oldHidden,oldOpacity,oldTransform,oldAngle,oldScale,
         entrance:new Spring(0,motion[i]),entranceDelay:motion[i].delay,entranceStarted:false};
     });
     setModalPlaybackVideos(slides[index].el.querySelectorAll('video'),{delayBackground:true});
@@ -683,6 +691,10 @@ const lightbox = (() => {
   function finish() {
     for (const s of slides) {
       s.placeholder.replaceWith(s.el); s.wrap.remove(); s.el.classList.remove('in-lb'); s.el.tabIndex=s.oldTabIndex;
+      // Same-frame clip path for the 1x slot; otherwise the raster-scaled
+      // path paints once on the landed card as an oversized corner.
+      if(s.rasterScale!==1) smooth(s.el,s.el.offsetWidth,s.el.offsetHeight);
+      s.el.style.removeProperty('--outline-width');
       const savedOpacity=s.oldOpacity===''?1:clamp(parseFloat(s.oldOpacity),0,1);
       const easeAfterLanding=!reducedMotion.matches&&s.el.closest('[data-carousel]')&&savedOpacity<.999;
       if(easeAfterLanding) {
