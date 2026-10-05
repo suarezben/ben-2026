@@ -405,6 +405,43 @@ video[poster].is-frame-ready { opacity: 1; }
   video[poster] { transition: none; }
 }
 
+/* Marks a visible clip that has no frames yet: spinner while loading, plain
+   play button when the browser blocks autoplay. */
+.video-status {
+  position: absolute;
+  z-index: 2;
+  left: 50%; top: 50%;
+  width: 44px; height: 44px;
+  margin: -22px 0 0 -22px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(19 16 21 / 0.5);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  color: #fff;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms cubic-bezier(.23, 1, .32, 1);
+}
+.video-status[data-state="loading"],
+.video-status[data-state="blocked"] { opacity: 1; pointer-events: auto; }
+.video-status svg { display: block; width: 100%; height: 100%; fill: currentColor; }
+.video-status-ring {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 38 88;
+  transform-origin: 50% 50%;
+  opacity: 0;
+}
+.video-status[data-state="loading"] .video-status-ring {
+  opacity: .9;
+  animation: video-status-spin 900ms linear infinite;
+}
+@keyframes video-status-spin { to { transform: rotate(360deg); } }
+
 .media-inner--sims { display: flex; }
 .media-inner--sims img { width: 200px; height: auto; }
 

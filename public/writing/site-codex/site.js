@@ -10,6 +10,12 @@ const CONFIG = {
   lightboxSpatialFriction: 1.42,
   lightboxPagingOverlap: 1.35,
   backgroundVideoPauseDelay: .45,
+  // Videos start this far outside the viewport so they are already moving on arrival.
+  videoPlayMargin: '50%',
+  // Seconds off screen before an unfinished download is dropped.
+  videoReleaseDelay: 3,
+  // Seconds a visible video may sit without frames before its loading badge shows.
+  videoStatusDelay: .5,
   margin: 64, carouselSpeed: 49, momentumTau: .9,
   carouselPauseTau: .14, carouselResumeTau: .52, carouselLandingHold: .12,
   carouselFadeFalloff: 150, carouselFadeIntensity: .82,
@@ -233,11 +239,18 @@ document.querySelectorAll('.media, .card-video, .tldr').forEach(el => geometry.o
 
 // Load and loop only videos near the viewport. Every clip has a first-frame
 // poster, so slow networks and decoder restarts never expose an empty container.
+// Clips that scroll away give up their unfinished download, so the bandwidth
+// goes to the clips on screen. A badge marks a visible clip that is still
+// loading, and becomes a play button when the browser blocks autoplay.
 // Moving the original DOM node into the lightbox preserves its time; it does not
 // create a second playing decoder.
 const visibleVideos = new Set();
 const videoRetryTimers = new WeakMap();
 const videoRetryCounts = new WeakMap();
+const videoReleaseTimers = new WeakMap();
+const videoStatusButtons = new WeakMap();
+const videoStatusTimers = new WeakMap();
+const blockedVideos = new Set();
 let modalPlaybackActive = false;
 let modalPlaybackVideos = new Set();
 let backgroundVideoPauseTimer = 0;
@@ -268,24 +281,69 @@ const retryVideo = (video, delay) => {
   const timer=setTimeout(()=> {
     videoRetryTimers.delete(video);
     if(shouldPlayVideo(video)) {
-      if(video.error||video.readyState<3) video.load();
+      // Reload only after a real failure; reloading a slow download restarts it from zero.
+      if(video.error) video.load();
       playVideo(video);
     }
   },delay);
   videoRetryTimers.set(video,timer);
 };
+const setVideoStatus = (video, state) => {
+  clearTimeout(videoStatusTimers.get(video));
+  videoStatusTimers.delete(video);
+  const button=videoStatusButtons.get(video);
+  if(!button) return;
+  button.dataset.state=state;
+  button.disabled=!state;
+};
+const expectVideoFrames = video => {
+  if(videoStatusTimers.has(video)||blockedVideos.has(video)) return;
+  videoStatusTimers.set(video,setTimeout(()=> {
+    videoStatusTimers.delete(video);
+    if(shouldPlayVideo(video)&&(video.paused||video.readyState<3)) setVideoStatus(video,'loading');
+  },CONFIG.videoStatusDelay*1000));
+};
+const cancelVideoRelease = video => {
+  clearTimeout(videoReleaseTimers.get(video));
+  videoReleaseTimers.delete(video);
+};
+const isFullyBuffered = video => video.duration>0&&video.buffered.length===1&&
+  video.buffered.start(0)<=.1&&video.buffered.end(0)>=video.duration-.25;
+const releaseVideo = video => {
+  videoReleaseTimers.delete(video);
+  // preload is 'auto' only once playVideo has started a download.
+  if(modalPlaybackActive||visibleVideos.has(video)||video.preload!=='auto'||!video.hasAttribute('src')||isFullyBuffered(video)) return;
+  video.dataset.src=video.getAttribute('src');
+  video.classList.remove('is-frame-ready');
+  video.removeAttribute('src');
+  video.load();
+};
+const scheduleVideoRelease = video => {
+  cancelVideoRelease(video);
+  videoReleaseTimers.set(video,setTimeout(()=>releaseVideo(video),CONFIG.videoReleaseDelay*1000));
+};
 const playVideo = video => {
   if(!shouldPlayVideo(video)) return;
   clearVideoRetry(video);
+  cancelVideoRelease(video);
+  if(!video.hasAttribute('src')&&video.dataset.src) video.setAttribute('src',video.dataset.src);
   video.muted=true;
   video.preload='auto';
+  if(video.paused||video.readyState<3) expectVideoFrames(video);
   video.play().catch(error=> {
-    if(error?.name==='AbortError'||error?.name==='NotAllowedError') return;
+    if(error?.name==='AbortError') return;
+    if(error?.name==='NotAllowedError') {
+      // Autoplay is blocked (for example iOS Low Power Mode): offer a tap target.
+      blockedVideos.add(video);
+      setVideoStatus(video,'blocked');
+      return;
+    }
     retryVideo(video,1500);
   });
 };
 const pauseVideo = video => {
   clearVideoRetry(video);
+  setVideoStatus(video,'');
   video.pause();
 };
 const setModalPlaybackVideos = (videos, {delayBackground=false}={}) => {
@@ -312,8 +370,9 @@ const videoObserver = new IntersectionObserver(entries => {
     if (isIntersecting) visibleVideos.add(video); else visibleVideos.delete(video);
     if (shouldPlayVideo(video)) playVideo(video);
     else pauseVideo(video);
+    if (!isIntersecting) scheduleVideoRelease(video);
   }
-}, {rootMargin: '160px 0px'});
+}, {rootMargin: `${CONFIG.videoPlayMargin} 0px`});
 document.querySelectorAll('video').forEach(video => {
   video.muted = true; video.loop = true; video.playsInline = true;
   video.disablePictureInPicture = true; video.controls = false;
@@ -326,17 +385,35 @@ document.querySelectorAll('video').forEach(video => {
     poster.decoding='async';
     video.before(poster);
   }
+  const status=document.createElement('button');
+  status.type='button';
+  status.className='video-status';
+  status.disabled=true;
+  status.setAttribute('aria-label','Play video');
+  status.innerHTML='<svg viewBox="0 0 44 44" aria-hidden="true"><circle class="video-status-ring" cx="22" cy="22" r="20"/><path d="M18 14.5v15L30 22z"/></svg>';
+  // The badge sits inside a lightbox trigger; keep its taps to itself.
+  status.addEventListener('pointerdown',e=>e.stopPropagation());
+  status.addEventListener('click',e=> { e.stopPropagation(); blockedVideos.delete(video); playVideo(video); });
+  video.after(status);
+  videoStatusButtons.set(video,status);
   video.addEventListener('loadeddata',()=>revealVideoAfterFirstFrame(video));
   video.addEventListener('playing',()=> {
     clearVideoRetry(video);
     videoRetryCounts.set(video,0);
+    blockedVideos.delete(video);
+    setVideoStatus(video,'');
     revealVideoAfterFirstFrame(video);
   });
   video.addEventListener('canplay',()=>playVideo(video));
-  video.addEventListener('stalled',()=>retryVideo(video,2500));
+  video.addEventListener('waiting',()=> { if(shouldPlayVideo(video)) expectVideoFrames(video); });
   video.addEventListener('error',()=>retryVideo(video,1500));
   videoObserver.observe(video);
 });
+// The first tap or key press anywhere lifts an autoplay block for every visible clip.
+const retryBlockedVideos = () => {
+  for(const video of [...blockedVideos]) { blockedVideos.delete(video); playVideo(video); }
+};
+for(const type of ['click','touchend','keydown']) document.addEventListener(type,retryBlockedVideos,{capture:true,passive:true});
 document.addEventListener('visibilitychange', () => {
   document.querySelectorAll('video').forEach(video => {
     if (document.hidden) video.pause();
