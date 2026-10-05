@@ -8,7 +8,9 @@ const CONFIG = {
   lightboxSiblingDelay: .03,
   lightboxSpatialMass: 1.8,
   lightboxSpatialFriction: 1.42,
-  lightboxPagingOverlap: 1.35,
+  lightboxPagingOverlap: 1.8,
+  // Smallest gap between slides during a page turn, as a fraction of viewport width.
+  lightboxPagingGap: .02,
   backgroundVideoPauseDelay: .45,
   // Videos start this far outside the viewport so they are already moving on arrival.
   videoPlayMargin: '50%',
@@ -485,6 +487,22 @@ const lightbox = (() => {
     const shrink = 1 - Math.min(.22, dismissDistance/vh*.28);
     return {w:slide.origin.w*scale*shrink,h:slide.origin.h*scale*shrink};
   }
+  // Largest exponent up to lightboxPagingOverlap that keeps the incoming and
+  // outgoing slide centers at least `separation` viewports apart all the way
+  // through a page turn. With exponent k the centers are closest at
+  // 1-(k-1)*k^(-k/(k-1)) viewports.
+  function pagingExponent(separation) {
+    const limit=CONFIG.lightboxPagingOverlap;
+    const closest=k=>1-(k-1)*Math.pow(k,-k/(k-1));
+    if(limit<=1||closest(limit)>=separation) return limit;
+    if(separation>=1) return 1;
+    let low=1, high=limit;
+    for(let step=0;step<16;step++) {
+      const middle=(low+high)/2;
+      if(closest(middle)>=separation) low=middle; else high=middle;
+    }
+    return low;
+  }
   function fit(slide, i) {
     const dismissDistance=slides.length===1?Math.hypot(dragX.x,dragY.x):Math.abs(dragY.x);
     const {w,h}=fittedSize(slide,dismissDistance);
@@ -514,7 +532,14 @@ const lightbox = (() => {
         : Math.sign(paging.target-paging.x);
       const incomingIndex=pointer?index+direction:index;
       if(direction&&i===incomingIndex) {
-        pageOffset=Math.sign(pageOffset)*Math.pow(Math.abs(pageOffset),CONFIG.lightboxPagingOverlap);
+        // A high overlap pulls the incoming slide in early. Use as much of it
+        // as the free space between the two slides allows, so wide viewports
+        // get the full curve and narrow ones a gentler curve of the same shape.
+        const outgoing=slides[incomingIndex-direction];
+        const separation=outgoing
+          ? ((w+fittedSize(outgoing,dismissDistance).w)/2+vw*CONFIG.lightboxPagingGap)/(vw*pageStride)
+          : 0;
+        pageOffset=Math.sign(pageOffset)*Math.pow(Math.abs(pageOffset),pagingExponent(separation));
       }
     }
     return {x:(vw-w)/2+pageOffset*vw*pageStride+dragX.x,y:(vh-h)/2+dragY.x,w,h};
@@ -1098,6 +1123,12 @@ function setupTokenTuner(title,className,settings) {
   try { if(parent!==window) hostSearch=parent.location.search; } catch {}
   const hasFlag=flag=>[location.search,hostSearch].some(search=>new URLSearchParams(search).has(flag));
   if(hasFlag('widths')) setupWidthTuner();
+  // ?overlap=1.8 tries a lightbox paging overlap without editing CONFIG.
+  const overlap=parseFloat([location.search,hostSearch].map(search=>new URLSearchParams(search).get('overlap')).find(Boolean));
+  if(overlap>0) CONFIG.lightboxPagingOverlap=overlap;
+  // ?gap=0.02 sets the smallest gap between slides during a page turn.
+  const gap=parseFloat([location.search,hostSearch].map(search=>new URLSearchParams(search).get('gap')).find(Boolean));
+  if(gap>=0) CONFIG.lightboxPagingGap=gap;
   // Local dev only, like the iteration tuner: ?press never shows on the live site.
   const local=location.protocol==='file:'||['localhost','127.0.0.1','::1'].includes(location.hostname)||
     location.hostname.endsWith('.local')||/^(10|192\.168)\./.test(location.hostname);
